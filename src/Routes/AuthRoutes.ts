@@ -3,7 +3,6 @@ import React from "react";
 import { ROUTES } from "../constants/routes";
 
 import { Navigate } from "react-router-dom";   
-import Catigories from "../pages/Catigories/";
 import Login from "../pages/LoginPage/";
 import GuestLayout from "../layouts/GuestLayout";
 

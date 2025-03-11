@@ -1,14 +1,16 @@
-// src/pages/Overview/Overview.tsx
-import React from "react";
 import { useOverviewData } from "../../hooks/useOverviewData";
 
 import SalesChart from "../../components/SalesChart";
 import RevenueChart from "../../components/RevenueChart";
 import OrdersTable from "../../components/OrdersTable";
 import StatsCard from "../../components/StatsCard";
+import { useAllCategories } from "../../queries/category.query";
 
 const Overview = () => {
   const { statsData, salesData, recentOrders } = useOverviewData();
+  const {data:categories ,isLoading ,refetch} = useAllCategories();
+
+  console.log(categories)
 
   return (
     <div className="space-y-8">

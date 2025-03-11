@@ -1,7 +1,6 @@
 // src/components/LoginForm.tsx
-import React, { useState } from "react";
-import { Button, Form } from "antd";
-import EmailField from "../forms/components/EmailField";
+import React from "react";
+import { Button, Form, Alert } from "antd";
 import TextField from "../forms/components/TextField";
 import PasswordField from "../forms/components/PasswordField";
 
@@ -9,16 +8,21 @@ type LoginFormProps = {
     onSubmit: (values: { email: string; password: string }) => void;
     initialEmail?: string;
     initialPassword?: string;
+    loading?: boolean;
+    error?: string;
 };
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, initialEmail = "", initialPassword = "" }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ 
+    onSubmit, 
+    initialEmail = "", 
+    initialPassword = "",
+    loading = false,
+    error
+}) => {
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
 
-    const handleFinish = async (values: { email: string; password: string }) => {
-        setLoading(true);
-        await onSubmit(values);
-        setLoading(false);
+    const handleFinish = (values: { email: string; password: string }) => {
+        onSubmit(values);
     };
 
     return (
@@ -28,14 +32,37 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, initialEmail = "", init
             initialValues={{ email: initialEmail, password: initialPassword }}
             onFinish={handleFinish}
             className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg"
+            disabled={loading}
         >
             <h2 className="text-2xl font-semibold text-center mb-6 text-red-600">Login</h2>
 
-            <EmailField id="email" label="Email" />
-            <PasswordField id="password" label="Password"  />
+            {error && (
+                <Form.Item>
+                    <Alert message={error} type="error" showIcon />
+                </Form.Item>
+            )}
+
+            <TextField 
+                id="email" 
+                label="Email" 
+                required={true}
+                disabled={loading}
+            />
+            <PasswordField 
+                id="password" 
+                label="Password" 
+                required={true}
+                disabled={loading}
+            />
             <Form.Item>
-                <Button type="primary" className="bg-red-500" htmlType="submit" loading={loading} block>
-                    Login
+                <Button 
+                    type="primary" 
+                    className="bg-red-500 hover:bg-red-600" 
+                    htmlType="submit" 
+                    loading={loading} 
+                    block
+                >
+                    {loading ? 'Logging in...' : 'Login'}
                 </Button>
             </Form.Item>
         </Form>

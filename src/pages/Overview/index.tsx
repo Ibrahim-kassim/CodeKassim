@@ -1,4 +1,4 @@
-import React from "react";
+
 import { ROUTES } from "../../constants/routes";
 import { Route } from "react-location";
 import Overview from "./Overview";
