@@ -1,10 +1,11 @@
 // src/routes/Routes.tsx
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+
+import { Routes, Route } from "react-router-dom";
 import { AdminRoutes } from "./AdminRoutes";
 
-import { ROUTES } from "../constants/routes";
+
 import { UserRoutes } from "./UserRoutes";
+import { AuthRoutes } from "./AuthRoutes";
 
 const renderRoutes = (route: any) => (
   <Route path={route.path} element={route.element}>
@@ -22,6 +23,9 @@ export default function AppRoutes() {
 
       {/* 🔒 Render Admin Routes (Protected) */}
       {renderRoutes(AdminRoutes)}
+
+      {/* 🔒 Render Auth Routes (Protected) */}
+      {renderRoutes(AuthRoutes)}
 
     </Routes>
   );

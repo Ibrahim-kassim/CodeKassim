@@ -1,32 +1,31 @@
 // src/pages/LoginPage.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import LoginForm from "../../components/Login/LoginForm";
-
-import { message } from "antd";
-import { ROUTES } from "../../constants/routes";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../constants/routes";
+import { useLogin } from "../../queries/user.query";
+import UserService from "../../services/user.service";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { mutate: login, isPending: isLoading, error } = useLogin();
+
+  useEffect(() => {
+    // If already logged in, redirect to dashboard
+    if (UserService.isLoggedIn()) {
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async (values: { email: string; password: string }) => {
-    const { email, password } = values;
-
-    // ✅ Hardcoded credentials
-    const validEmail = "ibrahimkassim975@gmail.com";
-    const validPassword = "soukonline2025";
-
-    if (email === validEmail && password === validPassword) {
-      // ✅ Store user in localStorage
-      localStorage.setItem("user", JSON.stringify({ email }));
-
-      // ✅ Success message & redirect to Admin Layout
-      message.success("Login successful!");
-      navigate(ROUTES.DASHBOARD, { replace: true });
-    } else {
-      // 🚫 Error message for incorrect credentials
-      message.error("Invalid email or password.");
-    }
+    login(values, {
+      onSuccess: () => {
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      },
+      onError: (error) => {
+        console.error('Login failed:', error);
+      }
+    });
   };
 
   return (
@@ -35,16 +34,11 @@ export default function Login() {
         <h2 className="text-3xl font-bold text-red-600 text-center mb-6">Welcome Back!</h2>
         <p className="text-center text-gray-500 mb-8">Please enter your credentials to log in.</p>
 
-        <LoginForm onSubmit={handleLogin} />
-
-        <div className="mt-6 text-center text-sm">
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <a href="#" className="text-red-500 font-semibold hover:underline">
-              Sign up
-            </a>
-          </p>
-        </div>
+        <LoginForm 
+          onSubmit={handleLogin} 
+          loading={isLoading} 
+          error={error?.message}
+        />
       </div>
     </div>
   );

@@ -1,116 +1,40 @@
-import React, { useState } from "react";
-import {
-  Table,
-  Popconfirm,
-  Space,
-  Tag,
-  Button,
-  Dropdown,
-  Menu,
-} from "antd";
-import { useCategories, Category } from "../../hooks/useCategories";
-import CategoryModal from "../../components/CategoryModal";
+import React, { useEffect } from "react";
+import { Button, Popconfirm, Space, Table, Tag } from "antd";
+import { Category } from '../../models/category.model';
+import CategoryModal from "./components/CategoryModal";
 import { AddButton, DeleteButton, EditButton } from "../../generalComponents";
-import ExportExcel from "../../components/exports/components/ExportExcel";
-import ExportPDF from "../../components/exports/components/ExportPDF";
-import { DownloadOutlined } from "@ant-design/icons";
+import { useCategoryActions } from "./hooks/useCategoryActions";
+import { useCategoryColumns } from "./hooks/useCategoryColumns";
 
 export default function Categories() {
-  const { categories, addCategory, updateCategory, deleteCategory } =
-    useCategories();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-
-  // Handle adding a new category
-  const handleAdd = () => {
-    setSelectedCategory(null);
-    setModalVisible(true);
-  };
-
-  // Handle editing a category
-  const handleEdit = (category: Category) => {
-    setSelectedCategory(category);
-    setModalVisible(true);
-  };
-
-  // Handle deleting a single category
-  const handleDelete = (id: number) => {
-    deleteCategory(id);
-  };
-
-  // Handle submitting form data for adding or updating a category
-  const handleSubmit = (data: Omit<Category, "id">) => {
-    selectedCategory
-      ? updateCategory({ ...selectedCategory, ...data })
-      : addCategory(data);
-    setModalVisible(false);
-  };
-
-  // Handle bulk deletion of selected categories
-  const handleBulkDelete = () => {
-    selectedRowKeys.forEach((key) => deleteCategory(Number(key)));
-    setSelectedRowKeys([]);
-  };
-
-  // Define table columns
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      render: (text: string) => <Tag color="blue">{text}</Tag>,
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Actions",
-      dataIndex: "actions",
-      key: "actions",
-      render: (_: any, record: Category) => (
-        <Space>
-          <EditButton onClick={() => handleEdit(record)} />
-          <Popconfirm
-            title="Delete this category?"
-            onConfirm={() => handleDelete(record.id)}
-          >
-            <DeleteButton />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  // Row selection configuration
-  const rowSelection = {
+  const {
+    selectedCategory,
+    modalVisible,
     selectedRowKeys,
-    onChange: (
-      selectedKeys: React.Key[],
-      selectedRows: Category[]
-    ) => {
-      setSelectedRowKeys(selectedKeys);
-    },
-    getCheckboxProps: (record: Category) => ({
-      disabled: false, // Customize if needed
-    }),
-  };
+    setModalVisible,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handleSubmit,
+    handleBulkDelete,
+    rowSelection,
+    isLoading,
+    categories,
+  } = useCategoryActions();
 
-  // Export dropdown menu
-  const exportMenu = (
-    <Menu>
-      <Menu.Item key="excel">
-        <ExportExcel data={categories} columns={columns} fileName="Categories" />
-      </Menu.Item>
-      <Menu.Item key="pdf">
-        <ExportPDF data={categories} columns={columns} fileName="Categories" />
-      </Menu.Item>
-    </Menu>
-  );
+  // Get columns configuration from the hook
+  const columns = useCategoryColumns({
+    onEdit: handleEdit,
+    onDelete: handleDelete,
+  });
+
+  // Log categories data when it changes
+  useEffect(() => {
+    console.log('Categories Component Data:', {
+      totalCategories: categories?.length || 0,
+      categories,
+    });
+  }, [categories]);
 
   return (
     <div className="space-y-6">
@@ -119,9 +43,6 @@ export default function Categories() {
         <h1 className="text-2xl font-bold text-red-600">Categories</h1>
         <div className="flex space-x-3">
           <AddButton onClick={handleAdd} label="Add Category" />
-          <Dropdown overlay={exportMenu} trigger={["click"]}>
-            <Button icon={<DownloadOutlined />} shape="circle" />
-          </Dropdown>
           {selectedRowKeys.length > 0 && (
             <Popconfirm
               title={`Delete ${selectedRowKeys.length} selected categories?`}
@@ -134,12 +55,13 @@ export default function Categories() {
       </div>
 
       {/* Table Section */}
-      <Table
+      <Table<Category>
         dataSource={categories}
         columns={columns}
-        rowKey={(record) => record.id} // Ensure unique key for each row
+        rowKey={record => record._id || ''}
         pagination={{ pageSize: 5 }}
         rowSelection={rowSelection}
+        loading={isLoading}
       />
 
       {/* Modal for Adding/Editing Categories */}
