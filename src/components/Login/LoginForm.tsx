@@ -43,8 +43,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
             )}
 
             <TextField 
-                id="email" 
-                label="Email" 
+                id="username" 
+                label="userName" 
                 required={true}
                 disabled={loading}
             />

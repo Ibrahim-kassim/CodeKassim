@@ -45,9 +45,12 @@ export function useUpdateCategory() {
 
 // Delete category
 export function useDeleteCategory() {
-  const query = useGenericEditHook(
-    api.deleteCategory.bind(api),
-    ENTITIES.DELETE_CATEGORY
+  return useGenericEditHook<{ categoryId: string }, { message: string }>(
+    async (payload) => api.deleteCategory(payload),
+    ENTITIES.DELETE_CATEGORY,
+    {
+      successMessage: 'Category deleted successfully',
+      errorMessage: 'Failed to delete category'
+    }
   );
-  return query;
 }

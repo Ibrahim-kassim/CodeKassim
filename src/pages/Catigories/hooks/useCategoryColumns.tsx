@@ -21,8 +21,8 @@ export function useCategoryColumns({ onEdit, onDelete }: UseCategoryColumnsProps
       title: 'Parent Category',
       dataIndex: 'parentCategory',
       key: 'parentCategory',
-      render: (parentCategory: string | null) => 
-        parentCategory ? <Tag color="green">{parentCategory}</Tag> : '-',
+      render: (parentCategory: Category | null) => 
+        parentCategory ? <Tag color="green">{parentCategory.name}</Tag> : '-',
     },
     {
       title: 'Attributes',

@@ -1,12 +1,23 @@
-import Keycloak, { KeycloakInstance } from 'keycloak-js';
-import { USER_ROLE } from '../models/user.model';
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  phone: string;
+  isAdmin: boolean;
+  token: string;
+}
 
 class UserService {
   private static instance: UserService;
-  private keycloak: KeycloakInstance | undefined;
+  private user: User | null = null;
 
   private constructor() {
     // Private constructor to enforce singleton
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    if (storedToken && storedUser) {
+      this.user = JSON.parse(storedUser);
+    }
   }
 
   static getInstance(): UserService {
@@ -16,98 +27,40 @@ class UserService {
     return UserService.instance;
   }
 
-  initKeycloak({
-    realm,
-    url,
-    clientId,
-    onAuthenticatedCallback,
-  }: {
-    realm: string;
-    url: string;
-    clientId: string;
-    onAuthenticatedCallback: () => void;
-  }) {
-    this.keycloak = new Keycloak({
-      realm,
-      url,
-      clientId,
-    });
-
-    this.keycloak
-      .init({
-        onLoad: 'login-required',
-      })
-      .then((authenticated) => {
-        if (authenticated) {
-          onAuthenticatedCallback();
-        }
-      })
-      .catch((error) => {
-        console.error('Keycloak initialization error:', error);
-      });
+  setUser(userData: User): void {
+    this.user = userData;
+    localStorage.setItem('token', userData.token);
+    localStorage.setItem('user', JSON.stringify(userData));
   }
 
   getToken(): string | undefined {
-    return this.keycloak?.token;
+    return this.user?.token;
   }
 
   isLoggedIn(): boolean {
-    return !!this.keycloak?.token;
-  }
-
-  doLogin(): void {
-    this.keycloak?.login();
+    return !!this.getToken();
   }
 
   doLogout(): void {
-    this.keycloak?.logout();
-  }
-
-  async updateToken<T>(successCallback?: () => Promise<T>): Promise<T | void> {
-    try {
-      await this.keycloak?.updateToken(5);
-      if (successCallback) {
-        return successCallback();
-      }
-    } catch (error) {
-      console.error('Token update error:', error);
-      this.doLogin();
-    }
+    this.user = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   }
 
   getUsername(): string {
-    return this.keycloak?.tokenParsed?.preferred_username ?? 'Guest';
+    return this.user?.username ?? 'Guest';
   }
 
   getEmail(): string | undefined {
-    return this.keycloak?.tokenParsed?.email;
-  }
-
-  hasRole(roles: USER_ROLE[]): boolean {
-    return roles.some((role) => this.keycloak?.hasRealmRole(role));
+    return this.user?.email;
   }
 
   isAdmin(): boolean {
-    return this.hasRole([USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN]);
+    return this.user?.isAdmin ?? false;
   }
 
-  isSystemAdmin(): boolean {
-    return this.hasRole([USER_ROLE.SYSTEM_ADMIN]);
-  }
-
-  isAppAdmin(): boolean {
-    return this.hasRole([USER_ROLE.APP_ADMIN]);
-  }
-
-  isAppUser(): boolean {
-    return this.hasRole([USER_ROLE.APP_USER]);
-  }
-
-  getCustomRoles(): USER_ROLE[] {
-    const allRoles = this.keycloak?.realmAccess?.roles ?? [];
-    return allRoles.filter(
-      (role) => !['offline_access', 'uma_authorization'].includes(role)
-    ) as USER_ROLE[];
+  getUser(): User | null {
+    return this.user;
   }
 }
 

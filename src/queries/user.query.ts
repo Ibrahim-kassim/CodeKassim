@@ -11,33 +11,23 @@ interface LoginCredentials {
 }
 
 interface LoginResponse {
+  message: string;
+  _id: string;
+  username: string;
+  email: string;
+  phone: string;
+  isAdmin: boolean;
   token: string;
-  user: {
-    _id: string;
-    email: string;
-    name: string;
-    role: string;
-  };
 }
 
 // Login user
 export function useLogin() {
   const mutation = useGenericEditHook<LoginCredentials, LoginResponse>(
     async (credentials) => {
-      // First authenticate with backend
       const response: AxiosResponse<LoginResponse> = await api.post('users/login', credentials);
       
-      // Then initialize Keycloak session
       if (response?.data?.token) {
-        await UserService.initKeycloak({
-          realm: process.env.REACT_APP_KEYCLOAK_REALM || '',
-          url: process.env.REACT_APP_KEYCLOAK_URL || '',
-          clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || '',
-          onAuthenticatedCallback: () => {
-            // Token is now managed by Keycloak and available for React Query
-            console.log('Keycloak session initialized');
-          }
-        });
+        UserService.setUser(response.data);
       }
       
       return response.data;
@@ -59,7 +49,6 @@ export function useLogin() {
 export function useLogout() {
   const mutation = useGenericEditHook<void, void>(
     async () => {
-      // Let Keycloak handle the logout
       UserService.doLogout();
       return Promise.resolve();
     },
@@ -81,10 +70,11 @@ export const isAuthenticated = () => {
 };
 
 export const getUser = () => {
+  const user = UserService.getUser();
   return {
-    email: UserService.getEmail(),
-    name: UserService.getUsername(),
-    roles: UserService.getCustomRoles()
+    email: user?.email,
+    username: user?.username,
+    isAdmin: user?.isAdmin
   };
 };
 

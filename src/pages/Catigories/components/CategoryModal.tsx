@@ -1,11 +1,16 @@
-// src/components/CategoryModal.tsx
-import React, { useEffect } from "react";
-import { Modal, Form } from "antd";
+import React, { useEffect, useState } from "react";
+import { Modal, Form, Select, Tag, Input, Space } from "antd";
+import type { InputRef } from "antd";
 import { Category } from "../../../models/category.model";
 import TextField from "../../../components/forms/components/TextField";
-import TextAreaField from "../../../components/forms/components/TextAreaField";
+import { PlusOutlined } from "@ant-design/icons";
+import { useAllCategories } from "../../../queries/category.query";
 
-type CategoryFormData = Omit<Category, "_id" | "__v" | "message">;
+type CategoryFormData = {
+    name: string;
+    parentCategory: string | null;
+    attributes: string[];
+};
 
 type Props = {
     visible: boolean;
@@ -16,6 +21,12 @@ type Props = {
 
 const CategoryModal: React.FC<Props> = ({ visible, onClose, onSubmit, initialData }) => {
     const [form] = Form.useForm<CategoryFormData>();
+    const [attributes, setAttributes] = useState<string[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [inputVisible, setInputVisible] = useState(false);
+    const inputRef = React.useRef<InputRef>(null);
+
+    const { data: categories, isPending } = useAllCategories();
 
     useEffect(() => {
         if (initialData) {
@@ -24,14 +35,34 @@ const CategoryModal: React.FC<Props> = ({ visible, onClose, onSubmit, initialDat
                 parentCategory: initialData.parentCategory,
                 attributes: initialData.attributes
             });
+            setAttributes(initialData.attributes || []);
         } else {
             form.resetFields();
+            setAttributes([]);
         }
     }, [initialData, form]);
 
     const handleFinish = (values: CategoryFormData) => {
-        onSubmit(values);
+        const formData = {
+            ...values,
+            attributes,
+            parentCategory: values.parentCategory || null
+        };
+        onSubmit(formData);
         onClose();
+    };
+
+    const handleInputConfirm = () => {
+        if (inputValue && !attributes.includes(inputValue)) {
+            setAttributes([...attributes, inputValue]);
+        }
+        setInputVisible(false);
+        setInputValue('');
+    };
+
+    const handleAttributeDelete = (removedAttribute: string) => {
+        const newAttributes = attributes.filter(attribute => attribute !== removedAttribute);
+        setAttributes(newAttributes);
     };
 
     return (
@@ -41,10 +72,55 @@ const CategoryModal: React.FC<Props> = ({ visible, onClose, onSubmit, initialDat
             onCancel={onClose}
             onOk={() => form.submit()}
             okText="Save"
+            confirmLoading={isPending}
         >
-            <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={{ parentCategory: null, attributes: [], description: '' }}>
+            <Form form={form} layout="vertical" onFinish={handleFinish} initialValues={{ parentCategory: null, attributes: [] }}>
                 <TextField id="name" label="Name" required />
-         
+                
+                <Form.Item name="parentCategory" label="Parent Category">
+                    <Select
+                        allowClear
+                        placeholder="Select parent category"
+                        loading={isPending}
+                        options={categories?.map((cat: Category) => ({
+                            value: cat._id,
+                            label: cat.name
+                        }))}
+                    />
+                </Form.Item>
+
+                <Form.Item label="Attributes">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                        <div style={{ marginBottom: 8 }}>
+                            {attributes.map((attribute) => (
+                                <Tag
+                                    key={attribute}
+                                    closable
+                                    onClose={() => handleAttributeDelete(attribute)}
+                                    style={{ marginBottom: 4 }}
+                                >
+                                    {attribute}
+                                </Tag>
+                            ))}
+                        </div>
+                        {inputVisible ? (
+                            <Input
+                                ref={inputRef}
+                                type="text"
+                                size="small"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onBlur={handleInputConfirm}
+                                onPressEnter={handleInputConfirm}
+                                style={{ width: 200 }}
+                            />
+                        ) : (
+                            <Tag onClick={() => setInputVisible(true)} style={{ cursor: 'pointer' }}>
+                                <PlusOutlined /> Add Attribute
+                            </Tag>
+                        )}
+                    </Space>
+                </Form.Item>
             </Form>
         </Modal>
     );

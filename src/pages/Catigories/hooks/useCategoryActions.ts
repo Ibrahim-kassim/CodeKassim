@@ -32,7 +32,7 @@ export function useCategoryActions() {
   const handleDelete = async (id: string) => {
     if (!id) return;
     try {
-      await deleteCategory(id);
+      await deleteCategory({ categoryId: id });
       refetchCategories(); // Refresh categories after deletion
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -65,7 +65,7 @@ export function useCategoryActions() {
         selectedRowKeys
           .map(key => key.toString())
           .filter((id): id is string => id !== undefined)
-          .map(id => deleteCategory(id))
+          .map(id => deleteCategory({ categoryId: id }))
       );
       setSelectedRowKeys([]);
       refetchCategories(); // Refresh categories after bulk deletion

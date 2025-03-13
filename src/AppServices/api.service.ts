@@ -322,13 +322,24 @@ export default class Api {
     return response?.data;
   };
 
-  public deleteCategory = async (_id: string) => {
-    const response = await this.deleteExistingEntityForSouk(ENTITIES.DELETE_CATEGORY, _id);
-    return response?.data;
+  public deleteCategory = async (payload: { categoryId: string }) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.DELETE_CATEGORY}`,
+      payload
+    );
+    return data;
   };
 
   public updateCategory = async (payload: Category) => {
     const response = await this.updateExistingEntityForSouk<Category>(ENTITIES.UPDATE_CATEGORY, payload);
     return response?.data;
+  };
+
+  public bulkDeleteCategories = async (categoryIds: string[]) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.DELETE_CATEGORY}`,
+      { categoryId: categoryIds[0] }
+    );
+    return data;
   };
 }
