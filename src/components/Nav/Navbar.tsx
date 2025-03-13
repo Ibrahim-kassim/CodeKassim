@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { MenuOutlined, CloseOutlined } from "@ant-design/icons";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import NavMenu from "./NavMenu";
 import { motion, AnimatePresence } from "framer-motion";
 import 'slick-carousel/slick/slick.css';
@@ -15,26 +13,28 @@ const Navbar = () => {
 
     return (
         <header className="sticky top-0 z-50 bg-white shadow-md">
-            <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                {/* Logo */}
-                <Logo />
+            <div className="max-w-7xl mx-auto px-4 py-3">
+                <div className="flex justify-between items-center">
+                    {/* Logo */}
+                    <Logo />
 
-                {/* Desktop Menu & Search */}
-                <div className="hidden md:flex items-center space-x-4">
-                    <NavMenu />
-                    <div className="w-52">
-                        <Search placeholder="Type here..." onChange={() => { }} />
+                    {/* Desktop Menu & Search */}
+                    <div className="hidden md:flex items-center space-x-6">
+                        <NavMenu />
+                        <div className="w-52">
+                            <Search placeholder="Type here..." onChange={() => { }} />
+                        </div>
                     </div>
-                </div>
 
-                {/* Mobile Menu Toggle */}
-                <button
-                    className="md:hidden text-2xl text-red-600"
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    aria-label="Toggle menu"
-                >
-                    {menuOpen ? <CloseOutlined /> : <MenuOutlined />}
-                </button>
+                    {/* Mobile Menu Toggle */}
+                    <button
+                        className="md:hidden text-2xl text-red-600"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        aria-label="Toggle menu"
+                    >
+                        {menuOpen ? <CloseOutlined /> : <MenuOutlined />}
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Full-Screen Slide Menu */}
@@ -71,7 +71,6 @@ const Navbar = () => {
                     </motion.nav>
                 )}
             </AnimatePresence>
-            
         </header>
     );
 };
