@@ -18,7 +18,7 @@ export default function Search({
       placeholder={placeholder}
       allowClear
       onChange={(e) => onChange(e.target.value)}
-      className="!w-[300px]"
+      className="!w-[250px]"
       suffix={<SearchOutlined />}
       data-cy={dataCy}
     />

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { NavLink } from "react-router-dom";
 import { RightOutlined } from "@ant-design/icons";
+import { useState } from 'react';
 
 interface Category {
   title: string;
@@ -14,26 +15,29 @@ interface ProductsMenuProps {
   categories?: Category[];
 }
 
-const defaultCategories: Category[] = [
-  {
-    title: "Electronics",
-    items: [
-      { name: "Phones & Tablets", path: "/category/phones" },
-      { name: "Computers", path: "/category/computers" },
-      { name: "Accessories", path: "/category/accessories" },
-      { name: "Gaming", path: "/category/gaming" }
-    ]
-  },
-  
-];
+const ProductsMenu = ({ categories = [] }: ProductsMenuProps) => {
+  // const [currentIndex, setCurrentIndex] = useState(0);
 
-const ProductsMenu = ({ categories = defaultCategories }: ProductsMenuProps) => {
+  // const visibleCategories = categories.slice(currentIndex, currentIndex + 2);
+
+  // const handleNext = () => {
+  //   if (currentIndex + 2 < categories.length) {
+  //     setCurrentIndex((prev) => prev + 2);
+  //   }
+  // };
+
+  // const handlePrev = () => {
+  //   if (currentIndex > 0) {
+  //     setCurrentIndex((prev) => prev - 2);
+  //   }
+  // };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="absolute top-full left-0 w-screen bg-white shadow-lg py-6 mt-1 z-50 border-t border-gray-100"
+      className="absolute top-full left-0 max-w-[50vw] w-screen bg-white shadow-lg py-6 mt-1 z-50 border-t border-gray-100"
     >
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
