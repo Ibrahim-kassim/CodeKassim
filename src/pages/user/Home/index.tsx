@@ -1,11 +1,10 @@
 import React from "react";
-import { Route } from "react-location";
 import { ROUTES } from "../../../constants/routes";
 import Home from "./Home";
 
-const route: Route = {
+const route = {
   path: ROUTES.HOME,
-  element: <Home />,
+  element: React.createElement(Home),
 };
 
 export default route;

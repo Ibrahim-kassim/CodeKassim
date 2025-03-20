@@ -5,6 +5,7 @@ import Overview from "../pages/Overview";
 import AdminLayout from "../layouts/AdminLayout";
 import { Navigate } from "react-router-dom";   
 import Catigories from "../pages/Catigories/";
+import Products from "../pages/Products/Products";
 
 export const AdminRoutes = {
   path: ROUTES.DASHBOARD,    
@@ -13,9 +14,12 @@ export const AdminRoutes = {
     Overview,   
     Catigories,
     {
+      path: ROUTES.PRODUCTS,
+      element: React.createElement(Products),
+    },
+    {
       path: "",
       element: React.createElement(Navigate, { to: ROUTES.OVERVIEW, replace: true }),
     },  
-              
   ],
 };

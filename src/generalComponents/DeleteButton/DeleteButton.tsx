@@ -1,21 +1,28 @@
 import { DeleteOutlined } from "@ant-design/icons";
-import { Button } from "antd";
-import React, { CSSProperties } from "react";
+import { Button, ButtonProps } from "antd";
+import React from "react";
 
-type Props = {
+type Props = ButtonProps & {
   disabled?: boolean;
-  onClick?: () => void;
-  style?: CSSProperties;
+  style?: React.CSSProperties;
 };
 
-export default function DeleteButton({ disabled, onClick, style }: Props) {
+export default function DeleteButton({ disabled, onClick, style, ...props }: Props) {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (onClick) {
+      e.stopPropagation(); // Prevent event bubbling
+      onClick(e);
+    }
+  };
+
   return (
     <Button
       style={{ color: "black", ...style }}
       disabled={disabled}
       icon={<DeleteOutlined />}
-      onClick={() => onClick && onClick()}
+      onClick={handleClick}
       danger
-    ></Button>
+      {...props}
+    />
   );
 }

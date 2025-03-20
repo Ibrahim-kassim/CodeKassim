@@ -56,12 +56,12 @@ export default function Categories() {
 
       {/* Table Section */}
       <Table<Category>
-        dataSource={categories}
+        rowKey="_id"
         columns={columns}
-        rowKey={record => record._id || ''}
-        pagination={{ pageSize: 5 }}
+        dataSource={categories}
         rowSelection={rowSelection}
         loading={isLoading}
+        pagination={{ pageSize: 5 }}
       />
 
       {/* Modal for Adding/Editing Categories */}

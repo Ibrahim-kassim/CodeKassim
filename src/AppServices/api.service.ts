@@ -16,6 +16,7 @@ import {
   HTTP_PATH,
 } from "../models/api.model";
 import { Category } from "../models/category.model";
+import { Product } from "../models/product.model";
 import UserService from "../services/user.service";
 
 interface Input {
@@ -293,20 +294,37 @@ export default class Api {
     );
   };
 
-  // Product Methods
-  public getProducts = async <T>() => {
-    const products = await this.getExistingEntityForSouk<T>(ENTITIES.PRODUCTS);
-    return products;
+  // Product endpoints
+  public getProducts = async () => {
+    const { data } = await this.get<Product[]>(
+      `${ENTITIES.ALL_PRODUCTS}`
+    );
+    return { data };
   };
 
-  public createProduct = async <T>(payload: T) =>
-    (await this.createNewEntityForSouk(ENTITIES.PRODUCTS, payload))?.data;
+  public createProduct = async (payload: Omit<Product, "_id">) => {
+    const { data } = await this.post<Product>(
+      `${ENTITIES.CREATE_PRODUCT}`,
+      payload
+    );
+    return data;
+  };
 
-  public deleteProduct = async (_id: string) =>
-    (await this.deleteExistingEntityForSouk(ENTITIES.PRODUCTS, _id))?.data;
+  public updateProduct = async (payload: Product) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.UPDATE_PRODUCT}`,
+      payload
+    );
+    return data;
+  };
 
-  public updateProduct = async <T>(payload: T) =>
-    (await this.updateExistingEntityForSouk(ENTITIES.PRODUCTS, payload))?.data;
+  public deleteProduct = async (productId: string) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.DELETE_PRODUCT}`,
+      { productId }
+    );
+    return data;
+  };
 
   // Categories 
   // Note To Rachid : when you want to make Crud operation you must start from here  copy these 4 and change their names
@@ -331,14 +349,22 @@ export default class Api {
   };
 
   public updateCategory = async (payload: Category) => {
-    const response = await this.updateExistingEntityForSouk<Category>(ENTITIES.UPDATE_CATEGORY, payload);
-    return response?.data;
+    const { data } = await this.post<{ message: string; category: Category }>(
+      `${ENTITIES.UPDATE_CATEGORY}`,
+      {
+        categoryId: payload._id,
+        newName: payload.name,
+        newParentCategory: payload.parentCategory,
+        newAttributes: payload.attributes
+      }
+    );
+    return data;
   };
 
   public bulkDeleteCategories = async (categoryIds: string[]) => {
     const { data } = await this.post<{ message: string }>(
       `${ENTITIES.DELETE_CATEGORY}`,
-      { categoryId: categoryIds[0] }
+      { categoryIds }  
     );
     return data;
   };

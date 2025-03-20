@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGenericEditHook } from "../hooks/useGenericEditHook";
 import api from "../AppServices/initApi";
 import { ENTITIES } from "../models/entities";
@@ -21,31 +21,60 @@ export function useAllCategories() {
     queryFn: async () => {
       const response = await api.getCategories();
       return response;
-    }
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 }
 
 // Create category
 export function useCreateCategory() {
+  const queryClient = useQueryClient();
   const query = useGenericEditHook(
     api.createCategory.bind(api),
-    ENTITIES.ADD_CATEGORY
+    ENTITIES.ADD_CATEGORY,
+    {
+      successMessage: 'Category created successfully',
+      errorMessage: 'Failed to create category'
+    }
   );
+
+  // Invalidate queries after successful creation
+  query.mutate = async (...args) => {
+    const result = await query.mutateAsync(...args);
+    queryClient.invalidateQueries({ queryKey: [ENTITIES.ALL_CATEGORIES] });
+    return result;
+  };
+
   return query;
 }
 
 // Update category
 export function useUpdateCategory() {
+  const queryClient = useQueryClient();
   const query = useGenericEditHook(
     api.updateCategory.bind(api),
-    ENTITIES.UPDATE_CATEGORY
+    ENTITIES.UPDATE_CATEGORY,
+    {
+      successMessage: 'Category updated successfully',
+      errorMessage: 'Failed to update category'
+    }
   );
+
+  // Invalidate queries after successful update
+  query.mutate = async (...args) => {
+    const result = await query.mutateAsync(...args);
+    queryClient.invalidateQueries({ queryKey: [ENTITIES.ALL_CATEGORIES] });
+    return result;
+  };
+
   return query;
 }
 
 // Delete category
 export function useDeleteCategory() {
-  return useGenericEditHook<{ categoryId: string }, { message: string }>(
+  const queryClient = useQueryClient();
+  const query = useGenericEditHook<{ categoryId: string }, { message: string }>(
     async (payload) => api.deleteCategory(payload),
     ENTITIES.DELETE_CATEGORY,
     {
@@ -53,4 +82,13 @@ export function useDeleteCategory() {
       errorMessage: 'Failed to delete category'
     }
   );
+
+  // Invalidate queries after successful deletion
+  query.mutate = async (...args) => {
+    const result = await query.mutateAsync(...args);
+    queryClient.invalidateQueries({ queryKey: [ENTITIES.ALL_CATEGORIES] });
+    return result;
+  };
+
+  return query;
 }

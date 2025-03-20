@@ -5,7 +5,11 @@ export enum ENTITIES {
     REGISTER = 'register',
     
     // Product Management
-    PRODUCTS = 'products',
+    PRODUCTS = 'product',
+    ALL_PRODUCTS = 'product/allProducts',
+    CREATE_PRODUCT = 'product/createProduct',
+    UPDATE_PRODUCT = 'product/updateProduct',
+    DELETE_PRODUCT = 'product/deleteProduct',
 
 
     // Category
