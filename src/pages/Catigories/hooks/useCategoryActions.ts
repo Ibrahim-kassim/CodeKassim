@@ -30,7 +30,6 @@ export function useCategoryActions() {
 
   // Handle deleting a single category
   const handleDelete = async (id: string) => {
-    console.log(id);
     if (!id) return;
     try {
       await deleteCategory({ categoryId: id });
@@ -47,15 +46,13 @@ export function useCategoryActions() {
         await updateCategory({ 
           ...data, 
           _id: selectedCategory._id,
-          __v: selectedCategory.__v || 0,
-          message: undefined
+          __v: selectedCategory.__v,
         });
-        refetchCategories(); // Refresh categories after update
       } else {
         await createCategory(data);
-        refetchCategories(); // Refresh categories after create
       }
       setModalVisible(false);
+      refetchCategories(); // Refresh categories after update/create
     } catch (error) {
       console.error('Error submitting category:', error);
     }

@@ -1,4 +1,4 @@
-// src/routes/UserRoutes.ts
+// src/routes/AdminRoutes.ts
 import React from "react";
 import { ROUTES } from "../constants/routes";
 import { Navigate } from "react-router-dom";   
@@ -22,5 +22,6 @@ export const UserRoutes = {
       path: "",
       element: React.createElement(Navigate, { to: ROUTES.HOME, replace: true }),
     },  
+              
   ],
 };
