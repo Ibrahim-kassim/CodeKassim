@@ -7,14 +7,28 @@ import {
   MenuUnfoldOutlined,
   DashboardOutlined,
   ShoppingOutlined,
+  ProductOutlined
 } from "@ant-design/icons";
 import { ROUTES } from "../../../constants/routes";
 
 const { Sider } = Layout;
 
 const ROUTE_ITEMS = [
-  { label: "Overview", route: `${ROUTES.DASHBOARD}/${ROUTES.OVERVIEW}`, icon: <DashboardOutlined /> },
-  { label: "Category", route: `${ROUTES.DASHBOARD}/${ROUTES.CATIGORIES}`, icon: <ShoppingOutlined /> },
+  {
+    label: 'Overview',
+    route: `${ROUTES.DASHBOARD}/${ROUTES.OVERVIEW}`,
+    icon: <DashboardOutlined />,
+  },
+  {
+    label: 'Categories',
+    route: `${ROUTES.DASHBOARD}/${ROUTES.CATIGORIES}`,
+    icon: <ShoppingOutlined />,
+  },
+  {
+    label: 'Products',
+    route: `${ROUTES.DASHBOARD}/${ROUTES.PRODUCTS}`,
+    icon: <ProductOutlined />,
+  },
 ];
 
 type Props = {

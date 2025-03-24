@@ -17,6 +17,7 @@ import {
 } from "../models/api.model";
 import { Category } from "../models/category.model";
 import UserService from "../services/user.service";
+import { Product } from "../models/product.model";
 
 interface Input {
   config: AxiosRequestConfig;
@@ -128,7 +129,10 @@ export default class Api {
     };
   };
 
-  public deleteExistingEntityForSouk = async (entity: ENTITIES, _id: string) => {
+  public deleteExistingEntityForSouk = async (
+    entity: ENTITIES,
+    _id: string
+  ) => {
     const response = await this.delete<{
       data: any;
       meta: Meta;
@@ -141,11 +145,9 @@ export default class Api {
   };
 
   public createNewEntityForSouk = async <T>(entity: ENTITIES, payload: T) => {
-    const response = await this.post(
-      `${entity}`,
-      payload,
-      { baseURL: this.baseURL }
-    );
+    const response = await this.post(`${entity}`, payload, {
+      baseURL: this.baseURL,
+    });
     return {
       ...response,
     };
@@ -155,11 +157,9 @@ export default class Api {
     entity: ENTITIES,
     payload: T
   ) => {
-    const response = await this.put(
-      `${entity}`,
-      payload,
-      { baseURL: this.baseURL }
-    );
+    const response = await this.put(`${entity}`, payload, {
+      baseURL: this.baseURL,
+    });
     return {
       ...response,
     };
@@ -168,16 +168,17 @@ export default class Api {
   // Parameter processing methods
   private convertArrayToParamsValue = <T>(
     items: Array<T | undefined> | undefined,
-    delimiter = "|"
+    delimiter = '|'
   ) =>
     items?.reduce(
-      (acc, c, index) => (index === 0 ? `${acc}${c}` : `${acc}${delimiter}${c}`),
-      ""
+      (acc, c, index) =>
+        index === 0 ? `${acc}${c}` : `${acc}${delimiter}${c}`,
+      ''
     );
 
   private processFilterValues = (
     items: Array<string | number> | string | number | undefined
-  ) => (isArray(items) ? this.convertArrayToParamsValue(items, ";") : items);
+  ) => (isArray(items) ? this.convertArrayToParamsValue(items, ';') : items);
 
   private processFilters = (
     filter: Array<QueryParamFilter> | undefined
@@ -207,9 +208,9 @@ export default class Api {
         };
       },
       {
-        filter_cols: "",
-        filter_ops: "",
-        filter_vals: "",
+        filter_cols: '',
+        filter_ops: '',
+        filter_vals: '',
       }
     );
   };
@@ -228,13 +229,13 @@ export default class Api {
             ? `${acc.sort_order}${sorter?.sort_order}`
             : `${acc.sort_order}|${sorter?.sort_order}`,
       }),
-      { sort_col: "", sort_order: "" }
+      { sort_col: '', sort_order: '' }
     );
   };
 
   public processParams = (params?: QueryParams): QueryParamProccesed => {
     return {
-      ...omit(params, ["filter", "sorters"]),
+      ...omit(params, ['filter', 'sorters']),
       children: this.convertArrayToParamsValue(params?.children),
       ds_cols: this.convertArrayToParamsValue(params?.ds_col),
       ...this.processFilters(params?.filter),
@@ -275,40 +276,56 @@ export default class Api {
   };
 
   public uploadEntity = (entity: ENTITIES, formData: FormData) => {
-    return this.post(
-      `${entity}/${HTTP_PATH.UPLOAD}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    return this.post(`${entity}/${HTTP_PATH.UPLOAD}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   };
 
   public createEntityRecursive = <T>(entity: ENTITIES, payload: T) => {
-    return this.post<T>(
-      `${entity}/${HTTP_PATH.ADD_RECURSIVE}`,
-      payload
-    );
+    return this.post<T>(`${entity}/${HTTP_PATH.ADD_RECURSIVE}`, payload);
   };
 
   // Product Methods
   public getProducts = async <T>() => {
-    const products = await this.getExistingEntityForSouk<T>(ENTITIES.PRODUCTS);
-    return products;
+    const { data } = await this.get<Product[]>(ENTITIES.ALL_PRODUCTS);
+    return data;
   };
 
-  public createProduct = async <T>(payload: T) =>
-    (await this.createNewEntityForSouk(ENTITIES.PRODUCTS, payload))?.data;
+  public createProduct = async (payload: Product) => {
+    const response = await this.createNewEntityForSouk<Product>(
+      ENTITIES.CREATE_PRODUCT,
+      payload
+    );
+    return response?.data;
+  };
 
-  public deleteProduct = async (_id: string) =>
-    (await this.deleteExistingEntityForSouk(ENTITIES.PRODUCTS, _id))?.data;
+  public deleteProduct = async (payload: { productId: string }) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.DELETE_PRODUCT}`,
+      payload
+    );
+    return data;
+  };
 
-  public updateProduct = async <T>(payload: T) =>
-    (await this.updateExistingEntityForSouk(ENTITIES.PRODUCTS, payload))?.data;
+  public updateProduct = async (payload: Product) => {
+    const response = await this.updateExistingEntityForSouk<Product>(
+      ENTITIES.UPDATE_PRODUCT,
+      payload
+    );
+    return response?.data;
+  };
 
-  // Categories 
+  public bulkDeleteProducts = async (productIds: string[]) => {
+    const { data } = await this.post<{ message: string }>(
+      `${ENTITIES.DELETE_PRODUCT}`,
+      { productId: productIds[0] }
+    );
+    return data;
+  };
+
+  // Categories
   // Note To Rachid : when you want to make Crud operation you must start from here  copy these 4 and change their names
   // change their ENTITIES and create interface like here i have Category interface then go and create query  on queries folder
 
@@ -318,7 +335,10 @@ export default class Api {
   };
 
   public createCategory = async (payload: Category) => {
-    const response = await this.createNewEntityForSouk<Category>(ENTITIES.ADD_CATEGORY, payload);
+    const response = await this.createNewEntityForSouk<Category>(
+      ENTITIES.ADD_CATEGORY,
+      payload
+    );
     return response?.data;
   };
 
@@ -331,7 +351,10 @@ export default class Api {
   };
 
   public updateCategory = async (payload: Category) => {
-    const response = await this.updateExistingEntityForSouk<Category>(ENTITIES.UPDATE_CATEGORY, payload);
+    const response = await this.updateExistingEntityForSouk<Category>(
+      ENTITIES.UPDATE_CATEGORY,
+      payload
+    );
     return response?.data;
   };
 
