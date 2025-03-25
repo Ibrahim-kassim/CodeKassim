@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space } from 'antd';
+import { Table, Button, Space, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProductActions } from './hooks/useProductActions';
 import ProductModal from './components/ProductModal';
@@ -11,6 +11,7 @@ const Products: React.FC = () => {
     products,
     selectedProduct,
     modalVisible,
+    selectedRowKeys,
     selectedProducts,
     setModalVisible,
     handleAdd,
@@ -19,6 +20,7 @@ const Products: React.FC = () => {
     handleSubmit,
     handleBulkDelete,
     isLoading,
+    rowSelection,
   } = useProductActions();
 
   const columns: ColumnsType<Product> = [
