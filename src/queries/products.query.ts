@@ -1,46 +1,44 @@
 import { ENTITIES } from "../models/entities";
 import Api from "../AppServices/api.service";
 import QueryUtil from "../utils/query.util";
-import api from "../AppServices/initApi";
 import { useQuery } from "@tanstack/react-query";
 import { useGenericEditHook } from "../hooks/useGenericEditHook";
 
+const api = new Api({
+  config: {
+    baseURL: process.env.REACT_BACK_END_URL || ''
+  }
+});
+
 // Get all products
 export function useAllProducts() {
-  return useQuery({
-    queryKey: [ENTITIES.ALL_PRODUCTS],
-    queryFn: async () => {
-      const response = await api.getProducts();
-      return response;
-    },
+  const query = useQuery({
+    queryKey: [ENTITIES.PRODUCTS],
+    queryFn: () => api.getProducts()
   });
-}
-// Create product
-export function useCreateProduct() {
-  const query = useGenericEditHook(
-    api.createProduct.bind(api),
-    ENTITIES.CREATE_PRODUCT
-  );
-  return query;
+  return QueryUtil.processGetQuery(query);
 }
 
-// Update product
-export function useUpdateProduct() {
-  const query = useGenericEditHook(
-    api.updateProduct.bind(api),
-    ENTITIES.UPDATE_PRODUCT
+// Create product
+export function useAddProduct() {
+  return useGenericEditHook(
+    api.createProduct,
+    ENTITIES.PRODUCTS
   );
-  return query;
 }
 
 // Delete product
 export function useDeleteProduct() {
-  return useGenericEditHook<{ productId: string }, { message: string }>(
-    async (payload) => api.deleteProduct(payload),
-    ENTITIES.DELETE_PRODUCT,
-    {
-      successMessage: 'Product deleted successfully',
-      errorMessage: 'Failed to delete product'
-    }
+  return useGenericEditHook(
+    api.deleteProduct,
+    ENTITIES.PRODUCTS
+  );
+}
+
+// Update product
+export function useUpdateProduct() {
+  return useGenericEditHook(
+    api.updateProduct,
+    ENTITIES.PRODUCTS
   );
 }
