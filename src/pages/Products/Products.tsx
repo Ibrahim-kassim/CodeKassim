@@ -1,10 +1,10 @@
 import React from 'react';
 import { Table, Button, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import DeleteButton from '../../generalComponents/DeleteButton/DeleteButton';
 import { useProductActions } from './hooks/useProductActions';
 import ProductModal from './components/ProductModal';
 import { Product } from '../../models/product.model';
+import { AddButton, DeleteButton } from '../../generalComponents';
 
 const Products: React.FC = () => {
   const {
@@ -36,7 +36,7 @@ const Products: React.FC = () => {
       title: 'Categories',
       dataIndex: 'categories',
       key: 'categories',
-      render: (categories: any[]) => categories.map((cat: any) => cat.name).join(', '),
+      render: (categories: string[]) => categories.join(', '),
     },
     {
       title: 'Status',
@@ -50,38 +50,34 @@ const Products: React.FC = () => {
       render: (_, record) => (
         <Space>
           <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <DeleteButton onClick={() => handleDelete(record._id!)}>Delete</DeleteButton>
+          <DeleteButton onClick={() => handleDelete(record._id)} />
         </Space>
       ),
     },
   ];
 
-  const rowSelection = {
-    selectedRowKeys: selectedProducts,
-    onChange: (selectedRowKeys: React.Key[]) => {
-      selectedProducts.length = 0;
-      selectedProducts.push(...selectedRowKeys.map(key => key.toString()));
-    },
-  };
-
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleAdd} style={{ marginRight: 8 }}>
-          Add Product
-        </Button>
-        {selectedProducts.length > 0 && (
-          <Button danger onClick={handleBulkDelete}>
-            Delete Selected
-          </Button>
-        )}
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-red-600">Products</h1>
+        <div className="flex space-x-3">
+          <AddButton onClick={handleAdd} label="Add Product" />
+          {selectedProducts.length > 0 && (
+            <Popconfirm
+              title={`Delete ${selectedProducts.length} selected products?`}
+              onConfirm={handleBulkDelete}
+            >
+              <Button danger>Delete Selected</Button>
+            </Popconfirm>
+          )}
+        </div>
       </div>
 
       <Table
         rowKey="_id"
         columns={columns}
         dataSource={products}
-        rowSelection={rowSelection}
         loading={isLoading}
       />
 
