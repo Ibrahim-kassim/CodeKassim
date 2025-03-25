@@ -52,7 +52,7 @@ const Products: React.FC = () => {
       render: (_, record) => (
         <Space>
           <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <DeleteButton onClick={() => handleDelete(record._id)} />
+          <DeleteButton onClick={() => handleDelete(record.?_id)} />
         </Space>
       ),
     },
