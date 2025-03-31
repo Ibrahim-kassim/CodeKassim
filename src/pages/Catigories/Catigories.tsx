@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Button, Popconfirm, Space, Table, Tag } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, Popconfirm, Radio, Space, Table, Tag } from "antd";
 import { Category } from '../../models/category.model';
 import CategoryModal from "./components/CategoryModal";
 import { AddButton, DeleteButton, EditButton } from "../../generalComponents";
@@ -21,6 +21,32 @@ export default function Categories() {
     isLoading,
     categories,
   } = useCategoryActions();
+
+  const [selectedCategoryFilter, setSelectedCategoryFilter] =
+    useState<string>('all');
+  
+  const mainCategories = categories?.filter((cat) => !cat.parentCategory) || [];
+  const subCategories = categories?.filter((cat) => cat.parentCategory) || [];
+
+  let filteredProducts = [];
+  
+  switch (selectedCategoryFilter) {
+    case 'all':
+      filteredProducts = categories;
+      break;
+
+    case 'main':
+      filteredProducts = mainCategories;
+      break;
+
+    case 'sub':
+      filteredProducts = subCategories;
+      break;
+
+    default:
+      filteredProducts = categories;
+      break;
+  }
 
   // Get columns configuration from the hook
   const columns = useCategoryColumns({
@@ -46,11 +72,25 @@ export default function Categories() {
         </div>
       </div>
 
+      {/* Category Filter */}
+      <div className="mb-4">
+        <Radio.Group
+          value={selectedCategoryFilter}
+          onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+          optionType="button"
+          buttonStyle="solid"
+        >
+          <Radio.Button value="all">All</Radio.Button>
+          <Radio.Button value="main">Main</Radio.Button>
+          <Radio.Button value="sub">Sub</Radio.Button>
+        </Radio.Group>
+      </div>
+
       {/* Table Section */}
       <Table<Category>
-        dataSource={categories}
+        dataSource={filteredProducts}
         columns={columns}
-        rowKey={record => record._id || ''}
+        rowKey={(record) => record._id || ''}
         pagination={{ pageSize: 5 }}
         rowSelection={rowSelection}
         loading={isLoading}

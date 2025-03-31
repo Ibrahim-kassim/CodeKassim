@@ -154,7 +154,7 @@ export default class Api {
   };
 
   public updateExistingEntityForSouk = async <T>(
-    entity: ENTITIES,
+    entity: string,
     payload: T
   ) => {
     const response = await this.put(`${entity}`, payload, {
@@ -310,9 +310,11 @@ export default class Api {
   };
 
   public updateProduct = async (payload: Product) => {
+    const { _id, ...rest } = payload;
+
     const response = await this.updateExistingEntityForSouk<Product>(
-      ENTITIES.UPDATE_PRODUCT,
-      payload
+      `${ENTITIES.UPDATE_PRODUCT}/${_id}`,
+      rest
     );
     return response?.data;
   };
@@ -351,10 +353,13 @@ export default class Api {
   };
 
   public updateCategory = async (payload: Category) => {
+    const { _id, ...rest } = payload;
+
     const response = await this.updateExistingEntityForSouk<Category>(
-      ENTITIES.UPDATE_CATEGORY,
-      payload
+      `${ENTITIES.UPDATE_CATEGORY}/${_id}`,
+      rest
     );
+
     return response?.data;
   };
 

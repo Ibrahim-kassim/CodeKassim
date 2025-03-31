@@ -1,38 +1,28 @@
 import React from 'react';
 import { Form, Input } from 'antd';
-import { Rule } from 'antd/lib/form';
-import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 
-interface Props {
-  id: string;
-  name: string;
-  label: string;
-  rules?: Rule[];
+type Props = {
   disabled?: boolean;
+  id: string;
+  label: string;
   required?: boolean;
   dataCy?: string;
-}
+};
 
-const PasswordField: React.FC<Props> = ({ 
-  id, 
-  name, 
-  label, 
-  rules = [], 
-  disabled = false,
-  required = false,
+export default function PasswordField({
+  disabled,
+  id,
+  label,
+  required,
   dataCy,
-}) => {
-  const finalRules = [...rules];
-  if (required && !rules.some(rule => 'required' in rule)) {
-    finalRules.unshift({ required: true, message: `${label} is required` });
-  }
-
+}: Props) {
   return (
     <Form.Item
       key={id}
-      name={name}
       label={label}
-      rules={finalRules}
+      name={id}
+      rules={[{ required, message: 'Required' }]}
     >
       <Input.Password
         disabled={disabled}
@@ -44,6 +34,4 @@ const PasswordField: React.FC<Props> = ({
       />
     </Form.Item>
   );
-};
-
-export default PasswordField;
+}

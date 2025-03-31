@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
+import { Table, Button, Space, Popconfirm, Radio } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useProductActions } from './hooks/useProductActions';
 import ProductModal from './components/ProductModal';
@@ -52,7 +52,7 @@ const Products: React.FC = () => {
       render: (_, record) => (
         <Space>
           <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <DeleteButton onClick={() => handleDelete(record.?_id)} />
+          <DeleteButton onClick={() => handleDelete(record._id!)} />
         </Space>
       ),
     },
@@ -74,6 +74,23 @@ const Products: React.FC = () => {
             </Popconfirm>
           )}
         </div>
+      </div>
+
+      {/* Category Filter */}
+      <div className="mb-4">
+        <Radio.Group
+          value={selectedCategoryFilter}
+          onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+          optionType="button"
+          buttonStyle="solid"
+        >
+          <Radio.Button value="all">All</Radio.Button>
+          {mainCategories.map((category) => (
+            <Radio.Button key={category._id} value={category._id}>
+              {category.name}
+            </Radio.Button>
+          ))}
+        </Radio.Group>
       </div>
 
       <Table

@@ -77,10 +77,16 @@ const CategoryModal: React.FC<Props> = ({
       open={visible}
       title={initialData ? 'Edit Category' : 'Add Category'}
       onCancel={onClose}
-      afterClose={() => {form.resetFields(); setAttributes([]); setInputVisible(false); setInputValue('');}}
+      afterClose={() => {
+        form.resetFields();
+        setAttributes([]);
+        setInputVisible(false);
+        setInputValue('');
+      }}
       onOk={() => form.submit()}
       okText="Save"
       confirmLoading={isPending}
+      forceRender
     >
       <Form
         form={form}
@@ -88,7 +94,7 @@ const CategoryModal: React.FC<Props> = ({
         onFinish={handleFinish}
         initialValues={{ parentCategory: null, attributes: [] }}
       >
-        <TextField id="name" name="name" label="Name" required />
+        <TextField id="name" label="Name" required />
 
         <Form.Item name="parentCategory" label="Parent Category">
           <Select

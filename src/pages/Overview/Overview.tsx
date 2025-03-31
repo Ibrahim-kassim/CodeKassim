@@ -10,8 +10,6 @@ const Overview = () => {
   const { statsData, salesData, recentOrders } = useOverviewData();
   const {data:categories ,isLoading ,refetch} = useAllCategories();
 
-  console.log(categories)
-
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-red-600">Admin Overview</h1>

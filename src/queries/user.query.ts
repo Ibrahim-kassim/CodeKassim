@@ -1,8 +1,8 @@
-import api from "../AppServices/initApi";
-import { useGenericEditHook } from "../hooks/useGenericEditHook";
-import { AxiosResponse } from "axios";
-import { ENTITIES } from "../models/entities";
-import UserService from "../services/user.service";
+import api from '../AppServices/initApi';
+import { useGenericEditHook } from '../hooks/useGenericEditHook';
+import { AxiosResponse } from 'axios';
+import { ENTITIES } from '../models/entities';
+import UserService from '../services/user.service';
 
 // Types
 interface LoginCredentials {
@@ -24,24 +24,27 @@ interface LoginResponse {
 export function useLogin() {
   const mutation = useGenericEditHook<LoginCredentials, LoginResponse>(
     async (credentials) => {
-      const response: AxiosResponse<LoginResponse> = await api.post('users/login', credentials);
-      
+      const response: AxiosResponse<LoginResponse> = await api.post(
+        'users/login',
+        credentials
+      );
+
       if (response?.data?.token) {
-        await UserService.setUser(response.data);
+        UserService.setUser(response.data);
       }
-      
+
       return response.data;
     },
     ENTITIES.USERS,
     {
       successMessage: 'Login successful',
-      errorMessage: 'Invalid username or password'
+      errorMessage: 'Invalid username or password',
     }
   );
 
   return {
     ...mutation,
-    isPending: mutation.isPending
+    isPending: mutation.isPending,
   };
 }
 
@@ -54,13 +57,13 @@ export function useLogout() {
     },
     ENTITIES.USERS,
     {
-      successMessage: 'Logged out successfully'
+      successMessage: 'Logged out successfully',
     }
   );
 
   return {
     ...mutation,
-    isPending: mutation.isPending
+    isPending: mutation.isPending,
   };
 }
 
@@ -74,7 +77,7 @@ export const getUser = () => {
   return {
     email: user?.email,
     username: user?.username,
-    isAdmin: user?.isAdmin
+    isAdmin: user?.isAdmin,
   };
 };
 
