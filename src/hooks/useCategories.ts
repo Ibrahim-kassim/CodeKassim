@@ -2,17 +2,14 @@
 import { useState } from "react";
 
 export type Category = {
+  _id: Key | null | undefined;
   id: number;
   name: string;
   description: string;
 };
 
 export const useCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: "Electronics", description: "Devices and gadgets" },
-    { id: 2, name: "Fashion", description: "Clothing and accessories" },
-    { id: 3, name: "Books", description: "Books and magazines" },
-  ]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const addCategory = (category: Omit<Category, "id">) => {
     setCategories([...categories, { ...category, id: Date.now() }]);

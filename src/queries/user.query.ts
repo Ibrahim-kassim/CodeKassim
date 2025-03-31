@@ -6,7 +6,7 @@ import UserService from "../services/user.service";
 
 // Types
 interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -27,7 +27,7 @@ export function useLogin() {
       const response: AxiosResponse<LoginResponse> = await api.post('users/login', credentials);
       
       if (response?.data?.token) {
-        UserService.setUser(response.data);
+        await UserService.setUser(response.data);
       }
       
       return response.data;
@@ -35,7 +35,7 @@ export function useLogin() {
     ENTITIES.USERS,
     {
       successMessage: 'Login successful',
-      errorMessage: 'Invalid email or password'
+      errorMessage: 'Invalid username or password'
     }
   );
 

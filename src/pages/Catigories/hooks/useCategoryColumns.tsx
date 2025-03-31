@@ -4,6 +4,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { Category } from '../../../models/category.model';
 import { EditButton, DeleteButton } from '../../../generalComponents';
 
+
+
 interface UseCategoryColumnsProps {
   onEdit: (category: Category) => void;
   onDelete: (id: string) => void;

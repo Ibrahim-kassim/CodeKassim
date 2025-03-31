@@ -80,6 +80,7 @@ const Products: React.FC = () => {
         rowKey="_id"
         columns={columns}
         dataSource={products}
+        rowSelection={rowSelection}
         loading={isLoading}
       />
 

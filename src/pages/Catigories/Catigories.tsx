@@ -28,14 +28,6 @@ export default function Categories() {
     onDelete: handleDelete,
   });
 
-  // Log categories data when it changes
-  useEffect(() => {
-    console.log('Categories Component Data:', {
-      totalCategories: categories?.length || 0,
-      categories,
-    });
-  }, [categories]);
-
   return (
     <div className="space-y-6">
       {/* Header Section */}
