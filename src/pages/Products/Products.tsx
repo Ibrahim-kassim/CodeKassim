@@ -14,7 +14,6 @@ const Products: React.FC = () => {
     selectedProduct,
     modalVisible,
     selectedRowKeys,
-    selectedProducts,
     setModalVisible,
     handleAdd,
     handleEdit,
@@ -88,9 +87,9 @@ const Products: React.FC = () => {
         <h1 className="text-2xl font-bold text-red-600">Products</h1>
         <div className="flex space-x-3">
           <AddButton onClick={handleAdd} label="Add Product" />
-          {selectedProducts.length > 0 && (
+          {selectedRowKeys.length > 0 && (
             <Popconfirm
-              title={`Delete ${selectedProducts.length} selected products?`}
+              title={`Delete ${selectedRowKeys.length} selected products?`}
               onConfirm={handleBulkDelete}
             >
               <Button danger>Delete Selected</Button>

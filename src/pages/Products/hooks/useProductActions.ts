@@ -71,6 +71,7 @@ export function useProductActions() {
   };
 
   const handleSubmit = async (values: Omit<Product, '_id'>) => {
+    console.log(values);
     try {
       if (selectedProduct?._id) {
         await api.updateProduct({

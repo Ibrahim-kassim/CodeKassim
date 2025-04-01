@@ -12,6 +12,7 @@ import {
   Steps,
   UploadProps,
   UploadFile,
+  Space,
 } from 'antd';
 import { Product } from '../../../models/product.model';
 import { useAllCategories } from '../../../queries/category.query';
@@ -42,43 +43,115 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [imageUrls, setImageUrls] = React.useState<string[]>([]);
   const [uploading, setUploading] = React.useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
+  const [selectedCategories, setSelectedCategories] = useState<any[]>([]);
   const { data: categories, isPending } = useAllCategories();
 
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const mainCategories = categories?.filter((cat) => !cat.parentCategory) || [];
 
   useEffect(() => {
     if (visible && initialData) {
-      const firstCategory = initialData.categories?.[0];
-      form.setFieldsValue({
-        ...initialData,
-        category: firstCategory,
-      });
-      setImageUrls(initialData.images || []);
-      if (firstCategory) {
-        setSelectedCategory(firstCategory);
+      const categoryId = initialData.categories?.[0]?._id;
+      
+      // Set all form values including category-specific fields
+      const formValues: any = {
+        name: initialData.name,
+        description: initialData.description,
+        categories: categoryId,
+        cost: initialData.cost,
+        images: initialData.images,
+        isAvailable: initialData.isAvailable,
+        specifications: initialData.specifications,
+      };
+
+      // If it's a perfume, set the specific fields
+      if (categoryId === '67c86bfeeee50cc264f911f8') {
+        const perfumeData = initialData as Perfume;
+        if ('brand' in initialData && 'scent' in initialData && 'gender' in initialData && 'sizes' in initialData) {
+          formValues.brand = perfumeData.brand;
+          formValues.scent = perfumeData.scent;
+          formValues.gender = perfumeData.gender;
+          formValues.sizes = perfumeData.sizes;
+        }
       }
+
+      // Set form values
+      form.setFieldsValue(formValues);
+
+      // Set images in fileList for display with correct typing
+      const initialFileList: UploadFile[] = (initialData.images || []).map((url, index) => ({
+        uid: `-${index}`,
+        name: `image-${index}`,
+        status: 'done' as const,
+        url: url,
+        type: 'image/jpeg',
+      }));
+      setFileList(initialFileList);
+      setImageUrls(initialData.images || []);
+      setSelectedCategories([categoryId]); // Set the category ID for the second section
+    } else {
+      // Reset form when modal is opened for creation
+      form.resetFields();
+      setFileList([]);
+      setImageUrls([]);
+      setSelectedCategories([]);
     }
   }, [visible, initialData, form]);
 
   const handleChange: UploadProps['onChange'] = (info) => {
     setFileList(info.fileList);
+    const urls = info.fileList.map(file => file.url || file.response?.url).filter(url => url);
+    form.setFieldsValue({ images: urls });
   };
 
   const handlePreview = async (file: UploadFile) => {
-    if (!file.url && !file.preview) {
-      file.preview = (await getBase64(file.originFileObj as File)) as string;
+    let previewURL = file.url || file.preview;
+    
+    if (!previewURL && file.originFileObj) {
+      previewURL = await getBase64(file.originFileObj);
     }
 
+    // Open preview in new window
     const image = new Image();
-    image.src = file.url ?? file.preview ?? '';
-    const imgWindow = window.open(image.src);
-    imgWindow?.document.write(image.outerHTML);
+    image.src = previewURL as string;
+    const imgWindow = window.open('');
+    if (imgWindow) {
+      imgWindow.document.write('<html><body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0;">');
+      imgWindow.document.write('<img src="' + previewURL + '" style="max-width: 100%; max-height: 100vh; object-fit: contain;">');
+      imgWindow.document.write('</body></html>');
+      imgWindow.document.close();
+    }
+  };
+
+  const handleRemove = (file: UploadFile) => {
+    const newFileList = fileList.filter((item) => item.uid !== file.uid);
+    setFileList(newFileList);
+
+    const fileUrl = file.url || file.response?.url;
+    if (fileUrl) {
+      const newImageUrls = imageUrls.filter((url) => url !== fileUrl);
+      setImageUrls(newImageUrls);
+      form.setFieldsValue({ images: newImageUrls });
+    }
+    return true;
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl); // Clean up memory
+    setSelectedImage(null);
+    setPreviewUrl(null);
   };
 
   const getBase64 = (file: File): Promise<string> =>
@@ -88,8 +161,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
     });
-  
-  const uploadButton = <div>+ Upload</div>;
+
+  const uploadButton = (
+    <div>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>Upload</div>
+    </div>
+  );
 
   const handleUpload = async (file: File) => {
     try {
@@ -112,22 +190,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const category = categories?.find((c) => c._id === values.category);
-
-      if (!category) {
+      
+      if (!values.categories) {
         message.error('Please select a valid category');
         return;
       }
 
-      // Convert form values based on category type
-      const productData = {
-        ...values,
-        categories: [values.category], // Only allow one main category
-      };
-
-      await onSubmit(productData);
+      await onSubmit(values);
       form.resetFields();
       setCurrentStep(0);
+      onCancel();
     } catch (error) {
       console.error('Validation failed:', error);
     }
@@ -138,29 +210,41 @@ const ProductModal: React.FC<ProductModalProps> = ({
       await form.validateFields([
         'name',
         'description',
-        'category',
+        'categories',
         'cost',
         'images',
         'isAvailable',
       ]);
+      
+      // Store current form values before moving to next step
+      const currentValues = form.getFieldsValue();
       setCurrentStep(1);
+      
+      // Re-set form values after step change to preserve data
+      setTimeout(() => {
+        form.setFieldsValue(currentValues);
+      }, 0);
     } catch (error) {
       console.error('Validation failed:', error);
     }
   };
 
   const handleBack = () => {
+    // Store current form values before moving back
+    const currentValues = form.getFieldsValue();
     setCurrentStep(0);
+    
+    // Re-set form values after step change to preserve data
+    setTimeout(() => {
+      form.setFieldsValue(currentValues);
+    }, 0);
   };
 
   const renderCategorySpecificFields = () => {
-    const category = categories?.find(
-      (c) => c._id === form.getFieldValue('category')
-    );
-    if (!category) return null;
+    if (!selectedCategories?.[0]) return null;
 
-    switch (category.name.toLowerCase()) {
-      case 'perfumes':
+    switch (selectedCategories[0]) {
+      case '67c86bfeeee50cc264f911f8': //Perfume
         return (
           <>
             <Form.Item
@@ -189,37 +273,32 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </Select>
             </Form.Item>
             <Form.Item
-              name="sizes"
-              label="Volumes"
-              rules={[
-                { required: true, message: 'Please add at least one volume' },
-              ]}
+              label="Sizes"
+              required
+              style={{ marginBottom: 0 }}
             >
-              <Form.List name="sizes">
+              <Form.List
+                name="sizes"
+                rules={[
+                  {
+                    validator: async (_, sizes) => {
+                      if (!sizes || sizes.length < 1) {
+                        return Promise.reject(new Error('At least one size is required'));
+                      }
+                    },
+                  },
+                ]}
+              >
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <div
-                        key={key}
-                        style={{ display: 'flex', marginBottom: 8, gap: 8 }}
-                      >
+                      <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
                         <Form.Item
                           {...restField}
                           name={[name, 'size']}
-                          rules={[
-                            { required: true, message: 'Missing volume' },
-                          ]}
+                          rules={[{ required: true, message: 'Missing size' }]}
                         >
-                          <Input placeholder="Volume (ml)" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[
-                            { required: true, message: 'Missing currency' },
-                          ]}
-                        >
-                          <Input placeholder="Currency" />
+                          <Input placeholder="Size" />
                         </Form.Item>
                         <Form.Item
                           {...restField}
@@ -228,19 +307,24 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         >
                           <InputNumber placeholder="Price" min={0} />
                         </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'currency']}
+                          rules={[{ required: true, message: 'Missing currency' }]}
+                          initialValue="USD"
+                        >
+                          <Input placeholder="Currency" />
+                        </Form.Item>
                         <Button onClick={() => remove(name)} type="link" danger>
                           Delete
                         </Button>
-                      </div>
+                      </Space>
                     ))}
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Volume
-                    </Button>
+                    <Form.Item>
+                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                        Add Size
+                      </Button>
+                    </Form.Item>
                   </>
                 )}
               </Form.List>
@@ -248,7 +332,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           </>
         );
 
-      case 'textiles':
+      case '67dc2bdbbea1059b31737418': //textiles
         return (
           <>
             <Form.Item
@@ -339,7 +423,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           </>
         );
 
-      case 'appliances':
+      case '67dc8f84bc9305e3287ae843': //appliances
         return (
           <>
             <Form.Item
@@ -450,7 +534,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
         form.resetFields();
         setImageUrls([]);
         setCurrentStep(0);
-        setSelectedCategory(null);
+        setSelectedCategories([]);
+        setFileList([]);
       }}
       footer={[
         <Button key="cancel" onClick={onCancel}>
@@ -481,7 +566,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       />
 
       <Form form={form} layout="vertical" initialValues={{ isAvailable: true }}>
-        {currentStep === 0 ? (
+        <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
           <>
             <Form.Item
               name="name"
@@ -502,13 +587,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Form.Item>
 
             <Form.Item
-              name="category"
+              name="categories"
               label="Category"
               rules={[{ required: true, message: 'Please select a category' }]}
             >
               <Select
+                loading={isPending}
+                onChange={(value) => {
+                  setSelectedCategories([value]); // Update selectedCategories when selection changes
+                  form.setFieldsValue({ categories: value }); // Keep form in sync
+                }}
+                style={{ width: '100%' }}
                 placeholder="Select category"
-                onChange={(value) => setSelectedCategory(value)}
               >
                 {mainCategories.map((category) => (
                   <Select.Option key={category._id} value={category._id}>
@@ -544,10 +634,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         </Form.Item>
                         <Form.Item
                           {...restField}
-                          name={[name, 'price']}
+                          name={[name, 'cost']}
                           rules={[{ required: true, message: 'Missing price' }]}
                         >
-                          <InputNumber placeholder="Price" min={0} />
+                          <InputNumber placeholder="Cost" min={0} />
                         </Form.Item>
                         <Button onClick={() => remove(name)} type="link" danger>
                           Delete
@@ -570,15 +660,30 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <Form.Item
               name="images"
               label="Images"
-              rules={[
-                { required: true, message: 'Please upload at least one image' },
-              ]}
+              valuePropName="fileList"
+              getValueFromEvent={(e) => {
+                if (Array.isArray(e)) {
+                  return e;
+                }
+                return e?.fileList;
+              }}
             >
               <Upload
                 listType="picture-card"
                 fileList={fileList}
-                onChange={handleChange}
                 onPreview={handlePreview}
+                onChange={handleChange}
+                onRemove={handleRemove}
+                customRequest={async ({ file, onSuccess }) => {
+                  if (file instanceof File) {
+                    try {
+                      await handleUpload(file);
+                      onSuccess?.("ok");
+                    } catch (error) {
+                      console.error('Upload failed:', error);
+                    }
+                  }
+                }}
               >
                 {fileList.length >= 8 ? null : uploadButton}
               </Upload>
@@ -592,9 +697,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <Switch />
             </Form.Item>
           </>
-        ) : (
-          renderCategorySpecificFields()
-        )}
+        </div>
+
+        <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+          {renderCategorySpecificFields()}
+        </div>
       </Form>
     </Modal>
   );
