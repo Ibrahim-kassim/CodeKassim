@@ -6,7 +6,7 @@ import { IconBaseProps } from "@ant-design/icons/lib/components/Icon";
 type Props = {
   title: string;
   value: number | string;
-  icon: React.ComponentType<IconBaseProps>; // Pass icon as component type
+  icon: React.ElementType;
   color: string;
 };
 

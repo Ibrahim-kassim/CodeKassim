@@ -4,6 +4,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { Category } from '../../../models/category.model';
 import { EditButton, DeleteButton } from '../../../generalComponents';
 
+
+
 interface UseCategoryColumnsProps {
   onEdit: (category: Category) => void;
   onDelete: (id: string) => void;
@@ -21,7 +23,7 @@ export function useCategoryColumns({ onEdit, onDelete }: UseCategoryColumnsProps
       title: 'Parent Category',
       dataIndex: 'parentCategory',
       key: 'parentCategory',
-      render: (parentCategory: Category | null) => 
+      render: (parentCategory: Category | null) =>
         parentCategory ? <Tag color="green">{parentCategory.name}</Tag> : '-',
     },
     {
@@ -31,7 +33,9 @@ export function useCategoryColumns({ onEdit, onDelete }: UseCategoryColumnsProps
       render: (attributes: string[]) => (
         <Space size={[0, 4]} wrap>
           {attributes?.map((attr, index) => (
-            <Tag key={index} color="orange">{attr}</Tag>
+            <Tag key={index} color="orange">
+              {attr}
+            </Tag>
           ))}
         </Space>
       ),
@@ -40,9 +44,8 @@ export function useCategoryColumns({ onEdit, onDelete }: UseCategoryColumnsProps
       title: 'Actions',
       key: 'actions',
       render: (_, record: Category) => {
-        // Only show delete button if we have an ID
         const hasId = typeof record._id === 'string' && record._id.length > 0;
-        
+
         return (
           <Space>
             <EditButton onClick={() => onEdit(record)} />

@@ -1,7 +1,6 @@
-
-import React from "react";
-import { Form, Input } from "antd";
-import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
+import React from 'react';
+import { Form, Input } from 'antd';
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 
 type Props = {
   disabled?: boolean;
@@ -23,7 +22,7 @@ export default function PasswordField({
       key={id}
       label={label}
       name={id}
-      rules={[{ required, message: "Required" }]}
+      rules={[{ required, message: 'Required' }]}
     >
       <Input.Password
         disabled={disabled}
