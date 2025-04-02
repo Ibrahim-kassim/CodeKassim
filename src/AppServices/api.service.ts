@@ -313,7 +313,7 @@ export default class Api {
     const { _id, ...rest } = payload;
 
     const response = await this.updateExistingEntityForSouk<Product>(
-      `http://localhost:3000/api/products/updateProduct/${_id}`,
+      `${ENTITIES.UPDATE_PRODUCT}/${_id}`,
       rest
     );
     return response?.data;

@@ -1,35 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Modal,
+  Drawer,
   Form,
   Input,
-  Select,
   InputNumber,
+  Button,
+  Select,
   Upload,
   message,
-  Button,
   Switch,
-  Steps,
-  UploadProps,
-  UploadFile,
+  Collapse,
   Space,
+  Tag,
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { Product } from '../../../models/product.model';
 import { useAllCategories } from '../../../queries/category.query';
-import { PlusOutlined } from '@ant-design/icons';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '../../../firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { UploadFile } from 'antd/es/upload/interface';
 import { Perfume } from '../../../models/perfume.model';
 import { Textile } from '../../../models/textile.model';
 import { Appliance } from '../../../models/appliance.model';
-import { Category } from '../../../models/category.model';
+
+const { Panel } = Collapse;
+
+interface Cost {
+  cost: number;
+  currency: string;
+}
 
 interface ProductModalProps {
   visible: boolean;
   onCancel: () => void;
-  onSubmit: (
-    values: Omit<Product | Perfume | Textile | Appliance, '_id'>
-  ) => Promise<void>;
+  onSubmit: (values: Omit<Product | Perfume | Textile | Appliance, '_id'>) => Promise<void>;
   initialData?: Product | Perfume | Textile | Appliance;
 }
 
@@ -40,148 +44,149 @@ const ProductModal: React.FC<ProductModalProps> = ({
   initialData,
 }) => {
   const [form] = Form.useForm();
-  const [imageUrls, setImageUrls] = React.useState<string[]>([]);
-  const [uploading, setUploading] = React.useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selectedCategories, setSelectedCategories] = useState<any[]>([]);
-  const { data: categories, isPending } = useAllCategories();
-
+  const { data: categories } = useAllCategories();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const mainCategories = categories?.filter((cat) => !cat.parentCategory) || [];
 
-  useEffect(() => {
-    if (visible && initialData) {
-      const categoryId = initialData.categories?.[0]?._id;
-      
-      // Set all form values including category-specific fields
-      const formValues: any = {
-        name: initialData.name,
-        description: initialData.description,
-        categories: categoryId,
-        cost: initialData.cost,
-        images: initialData.images,
-        isAvailable: initialData.isAvailable,
-        specifications: initialData.specifications,
-      };
-
-      // If it's a perfume, set the specific fields
-      if (categoryId === '67c86bfeeee50cc264f911f8') {
-        const perfumeData = initialData as Perfume;
-        if ('brand' in initialData && 'scent' in initialData && 'gender' in initialData && 'sizes' in initialData) {
-          formValues.brand = perfumeData.brand;
-          formValues.scent = perfumeData.scent;
-          formValues.gender = perfumeData.gender;
-          formValues.sizes = perfumeData.sizes;
-        }
-      }
-
-      // Set form values
-      form.setFieldsValue(formValues);
-
-      // Set images in fileList for display with correct typing
-      const initialFileList: UploadFile[] = (initialData.images || []).map((url, index) => ({
-        uid: `-${index}`,
-        name: `image-${index}`,
-        status: 'done' as const,
-        url: url,
-        type: 'image/jpeg',
-      }));
-      setFileList(initialFileList);
-      setImageUrls(initialData.images || []);
-      setSelectedCategories([categoryId]); // Set the category ID for the second section
-    } else {
-      // Reset form when modal is opened for creation
-      form.resetFields();
-      setFileList([]);
-      setImageUrls([]);
+  const getAvailableCategories = (selectedCats: string[]) => {
+    if (selectedCats.length === 0) {
+      return mainCategories; // Show only main categories when nothing is selected
+    }
+  
+    const lastSelectedCategory = selectedCats[selectedCats.length - 1]; // Get the most recent selection
+    return categories?.filter(cat => cat.parentCategory && cat.parentCategory._id === lastSelectedCategory) || [];
+  };
+  
+  const handleCategoryChange = (values: string[]) => {
+    if (values.length === 0) {
+      // Reset to main categories if nothing is selected
       setSelectedCategories([]);
+      form.setFieldsValue({ categories: [] });
+      return;
+    }
+  
+    const lastSelectedCategory = values[values.length - 1]; // Get the most recent selection
+    const subCategories = categories?.filter(cat => cat.parentCategory?._id === lastSelectedCategory).map(cat => cat._id) || [];
+  
+    if (subCategories.length > 0) {
+      // Keep only the last selected category
+      setSelectedCategories([lastSelectedCategory]);
+      form.setFieldsValue({ categories: [lastSelectedCategory] });
+    } else {
+      // Allow selection of multiple subcategories if no further nesting exists
+      setSelectedCategories(values);
+      form.setFieldsValue({ categories: values });
+    }
+  };
+
+  useEffect(() => {
+    // Reset form when modal opens
+    if (visible) {
+      if (initialData) {
+        const categoryIds = initialData.categories
+  ?.map(cat => cat._id)
+  .filter((id): id is string => id !== undefined) || [];
+
+        // Set all form values including category-specific fields
+        const formValues: any = {
+          name: initialData.name,
+          description: initialData.description,
+          categories: categoryIds,
+          isAvailable: initialData.isAvailable,
+          specifications: initialData.specifications,
+          images: initialData.images,
+        };
+
+        // Handle cost array
+        if (Array.isArray(initialData.cost)) {
+          formValues.cost = initialData.cost as Cost[];
+        } else if (initialData.cost) {
+          const cost = initialData.cost as Cost;
+          formValues.cost = [
+            {
+              cost: cost.cost,
+              currency: cost.currency || 'USD',
+            },
+          ];
+        }
+
+        // Set form values
+        form.setFieldsValue(formValues);
+
+        // Set images in fileList for display
+        const initialFileList: UploadFile[] = (initialData.images || []).map((url, index) => ({
+          uid: `-${index}`,
+          name: `image-${index}`,
+          status: 'done',
+          url: url,
+          type: 'image/jpeg',
+        }));
+        setFileList(initialFileList);
+        setImageUrls(initialData.images || []);
+
+        // Set selected categories
+        setSelectedCategories(categoryIds as string[]);
+      } else {
+        // Reset everything when opening for a new product
+        form.resetFields();
+        setFileList([]);
+        setImageUrls([]);
+        setSelectedCategories([]);
+      }
     }
   }, [visible, initialData, form]);
-
-  const handleChange: UploadProps['onChange'] = (info) => {
-    setFileList(info.fileList);
-    const urls = info.fileList.map(file => file.url || file.response?.url).filter(url => url);
-    form.setFieldsValue({ images: urls });
-  };
-
-  const handlePreview = async (file: UploadFile) => {
-    let previewURL = file.url || file.preview;
-    
-    if (!previewURL && file.originFileObj) {
-      previewURL = await getBase64(file.originFileObj);
-    }
-
-    // Open preview in new window
-    const image = new Image();
-    image.src = previewURL as string;
-    const imgWindow = window.open('');
-    if (imgWindow) {
-      imgWindow.document.write('<html><body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0;">');
-      imgWindow.document.write('<img src="' + previewURL + '" style="max-width: 100%; max-height: 100vh; object-fit: contain;">');
-      imgWindow.document.write('</body></html>');
-      imgWindow.document.close();
-    }
-  };
-
-  const handleRemove = (file: UploadFile) => {
-    const newFileList = fileList.filter((item) => item.uid !== file.uid);
-    setFileList(newFileList);
-
-    const fileUrl = file.url || file.response?.url;
-    if (fileUrl) {
-      const newImageUrls = imageUrls.filter((url) => url !== fileUrl);
-      setImageUrls(newImageUrls);
-      form.setFieldsValue({ images: newImageUrls });
-    }
-    return true;
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleRemoveImage = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl); // Clean up memory
-    setSelectedImage(null);
-    setPreviewUrl(null);
-  };
-
-  const getBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-
-  const uploadButton = (
-    <div>
-      <PlusOutlined />
-      <div style={{ marginTop: 8 }}>Upload</div>
-    </div>
-  );
 
   const handleUpload = async (file: File) => {
     try {
       setUploading(true);
-      const storageRef = ref(storage, `products/${file.name}`);
+      
+      // Create a unique filename to prevent overwriting
+      const timestamp = Date.now();
+      const uniqueFileName = `${timestamp}_${file.name}`;
+      const storageRef = ref(storage, `products/${uniqueFileName}`);
+      
+      // Upload the file
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
-      setImageUrls((prev) => [...prev, url]);
-      const currentImages = form.getFieldValue('images') || [];
-      form.setFieldsValue({ images: [...currentImages, url] });
+
+      // Update image URLs in state
+      setImageUrls(prev => [...prev, url]);
+
+      // Get current images and ensure it's an array
+      let currentImages = form.getFieldValue('images');
+      if (!Array.isArray(currentImages)) {
+        currentImages = [];
+      }
+
+      // Update form with new image URL
+      form.setFieldsValue({
+        images: [...currentImages, url],
+      });
+
+      // Update fileList with new image
+      setFileList(prev => [
+        ...prev,
+        {
+          uid: `-${prev.length + 1}`,
+          name: file.name,
+          status: 'done',
+          url: url,
+          type: file.type,
+        },
+      ]);
+
       message.success('Image uploaded successfully!');
+      return url;
     } catch (error) {
       console.error('Error uploading image:', error);
       message.error('Failed to upload image');
+      throw error;
     } finally {
       setUploading(false);
     }
@@ -190,60 +195,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
-      if (!values.categories) {
-        message.error('Please select a valid category');
+
+      if (!values.categories || values.categories.length < 1) {
+        message.error('Please select at least one category');
         return;
       }
 
       await onSubmit(values);
       form.resetFields();
-      setCurrentStep(0);
       onCancel();
     } catch (error) {
       console.error('Validation failed:', error);
     }
   };
 
-  const handleNext = async () => {
-    try {
-      await form.validateFields([
-        'name',
-        'description',
-        'categories',
-        'cost',
-        'images',
-        'isAvailable',
-      ]);
-      
-      // Store current form values before moving to next step
-      const currentValues = form.getFieldsValue();
-      setCurrentStep(1);
-      
-      // Re-set form values after step change to preserve data
-      setTimeout(() => {
-        form.setFieldsValue(currentValues);
-      }, 0);
-    } catch (error) {
-      console.error('Validation failed:', error);
-    }
-  };
-
-  const handleBack = () => {
-    // Store current form values before moving back
-    const currentValues = form.getFieldsValue();
-    setCurrentStep(0);
-    
-    // Re-set form values after step change to preserve data
-    setTimeout(() => {
-      form.setFieldsValue(currentValues);
-    }, 0);
-  };
-
   const renderCategorySpecificFields = () => {
-    if (!selectedCategories?.[0]) return null;
+    // Get the first main category selected (if any)
+    const mainCategory = selectedCategories.find((catId) =>
+      mainCategories.some((main) => main._id === catId)
+    );
 
-    switch (selectedCategories[0]) {
+    if (!mainCategory) return null;
+
+    switch (mainCategory) {
       case '67c86bfeeee50cc264f911f8': //Perfume
         return (
           <>
@@ -292,7 +266,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                      <Space
+                        key={key}
+                        style={{ display: 'flex', marginBottom: 8 }}
+                        align="baseline"
+                      >
                         <Form.Item
                           {...restField}
                           name={[name, 'size']}
@@ -359,42 +337,41 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <Form.Item
               name="careInstructions"
               label="Care Instructions"
-              rules={[
-                { required: true, message: 'Please enter care instructions' },
-              ]}
+              rules={[{ required: true, message: 'Please enter care instructions' }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
             <Form.Item
-              name="sizes"
               label="Sizes"
-              rules={[
-                { required: true, message: 'Please add at least one size' },
-              ]}
+              required
+              style={{ marginBottom: 0 }}
             >
-              <Form.List name="sizes">
+              <Form.List
+                name="sizes"
+                rules={[
+                  {
+                    validator: async (_, sizes) => {
+                      if (!sizes || sizes.length < 1) {
+                        return Promise.reject(new Error('At least one size is required'));
+                      }
+                    },
+                  },
+                ]}
+              >
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <div
+                      <Space
                         key={key}
-                        style={{ display: 'flex', marginBottom: 8, gap: 8 }}
+                        style={{ display: 'flex', marginBottom: 8 }}
+                        align="baseline"
                       >
                         <Form.Item
                           {...restField}
                           name={[name, 'size']}
                           rules={[{ required: true, message: 'Missing size' }]}
                         >
-                          <Input placeholder="Size (e.g., 3x4)" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[
-                            { required: true, message: 'Missing currency' },
-                          ]}
-                        >
-                          <Input placeholder="Currency" />
+                          <Input placeholder="Size" />
                         </Form.Item>
                         <Form.Item
                           {...restField}
@@ -403,19 +380,24 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         >
                           <InputNumber placeholder="Price" min={0} />
                         </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'currency']}
+                          rules={[{ required: true, message: 'Missing currency' }]}
+                          initialValue="USD"
+                        >
+                          <Input placeholder="Currency" />
+                        </Form.Item>
                         <Button onClick={() => remove(name)} type="link" danger>
                           Delete
                         </Button>
-                      </div>
+                      </Space>
                     ))}
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Size
-                    </Button>
+                    <Form.Item>
+                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                        Add Size
+                      </Button>
+                    </Form.Item>
                   </>
                 )}
               </Form.List>
@@ -435,17 +417,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Form.Item>
             <Form.Item
               name="warranty"
-              label="Warrenty"
-              rules={[{ required: true, message: 'Please enter warrenty' }]}
+              label="Warranty"
+              rules={[{ required: true, message: 'Please enter warranty' }]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               name="powerConsumption"
               label="Power Consumption"
-              rules={[
-                { required: true, message: 'Please enter Power Consumption' },
-              ]}
+              rules={[{ required: true, message: 'Please enter Power Consumption' }]}
             >
               <Input />
             </Form.Item>
@@ -463,19 +443,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </Select>
             </Form.Item>
             <Form.Item
-              name="sizes"
               label="Sizes"
-              rules={[
-                { required: true, message: 'Please add at least one size' },
-              ]}
+              required
+              style={{ marginBottom: 0 }}
             >
-              <Form.List name="sizes">
+              <Form.List
+                name="sizes"
+                rules={[
+                  {
+                    validator: async (_, sizes) => {
+                      if (!sizes || sizes.length < 1) {
+                        return Promise.reject(new Error('At least one size is required'));
+                      }
+                    },
+                  },
+                ]}
+              >
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <div
+                      <Space
                         key={key}
-                        style={{ display: 'flex', marginBottom: 8, gap: 8 }}
+                        style={{ display: 'flex', marginBottom: 8 }}
+                        align="baseline"
                       >
                         <Form.Item
                           {...restField}
@@ -486,88 +476,77 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         </Form.Item>
                         <Form.Item
                           {...restField}
-                          name={[name, 'currency']}
-                          rules={[
-                            { required: true, message: 'Missing currency' },
-                          ]}
-                        >
-                          <Input placeholder="Currency" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
                           name={[name, 'price']}
                           rules={[{ required: true, message: 'Missing price' }]}
                         >
                           <InputNumber placeholder="Price" min={0} />
                         </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'currency']}
+                          rules={[{ required: true, message: 'Missing currency' }]}
+                          initialValue="USD"
+                        >
+                          <Input placeholder="Currency" />
+                        </Form.Item>
                         <Button onClick={() => remove(name)} type="link" danger>
                           Delete
                         </Button>
-                      </div>
+                      </Space>
                     ))}
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Size
-                    </Button>
+                    <Form.Item>
+                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                        Add Size
+                      </Button>
+                    </Form.Item>
                   </>
                 )}
               </Form.List>
             </Form.Item>
           </>
         );
-
       default:
         return null;
     }
   };
 
   return (
-    <Modal
+    <Drawer
       title={initialData ? 'Edit Product' : 'Add Product'}
-      open={visible}
-      onCancel={onCancel}
-      afterClose={() => {
+      placement="right"
+      width={720}
+      onClose={() => {
+        // Clean up form and state when drawer closes
         form.resetFields();
-        setImageUrls([]);
-        setCurrentStep(0);
-        setSelectedCategories([]);
         setFileList([]);
+        setImageUrls([]);
+        setSelectedCategories([]);
+        onCancel();
       }}
-      footer={[
-        <Button key="cancel" onClick={onCancel}>
-          Cancel
-        </Button>,
-        currentStep === 0 ? (
-          <Button key="next" type="primary" onClick={handleNext}>
-            Next
+      open={visible}
+      extra={
+        <Space>
+          <Button
+            onClick={() => {
+              // Clean up form and state when canceling
+              form.resetFields();
+              setFileList([]);
+              setImageUrls([]);
+              setSelectedCategories([]);
+              onCancel();
+            }}
+          >
+            Cancel
           </Button>
-        ) : (
-          <>
-            <Button key="back" onClick={handleBack}>
-              Back
-            </Button>
-            <Button key="submit" type="primary" onClick={handleSubmit}>
-              Submit
-            </Button>
-          </>
-        ),
-      ]}
+          <Button type="primary" onClick={handleSubmit}>
+            Save
+          </Button>
+        </Space>
+      }
     >
-      <Steps
-        current={currentStep}
-        items={[
-          { title: 'General Product Info' },
-          { title: 'Category-Specific Details' },
-        ]}
-      />
-
-      <Form form={form} layout="vertical" initialValues={{ isAvailable: true }}>
-        <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
-          <>
+      <Form form={form} layout="vertical" requiredMark>
+        <Collapse defaultActiveKey={['1', '2', '3']} ghost>
+          <Panel header="Basic Information" key="1">
             <Form.Item
               name="name"
               label="Name"
@@ -575,135 +554,167 @@ const ProductModal: React.FC<ProductModalProps> = ({
             >
               <Input />
             </Form.Item>
-
             <Form.Item
               name="description"
               label="Description"
-              rules={[
-                { required: true, message: 'Please enter product description' },
-              ]}
+              rules={[{ required: true, message: 'Please enter product description' }]}
             >
               <Input.TextArea rows={4} />
             </Form.Item>
-
             <Form.Item
               name="categories"
-              label="Category"
-              rules={[{ required: true, message: 'Please select a category' }]}
+              label="Categories"
+              rules={[{ required: true, message: 'Please select at least one category' }]}
             >
               <Select
-                loading={isPending}
-                onChange={(value) => {
-                  setSelectedCategories([value]); // Update selectedCategories when selection changes
-                  form.setFieldsValue({ categories: value }); // Keep form in sync
-                }}
-                style={{ width: '100%' }}
-                placeholder="Select category"
-              >
-                {mainCategories.map((category) => (
-                  <Select.Option key={category._id} value={category._id}>
-                    {category.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
+  mode="multiple"
+  placeholder="Select categories"
+  onChange={handleCategoryChange}
+  options={getAvailableCategories(selectedCategories).map((cat) => ({
+    value: cat._id, // Keep _id as value
+    label: cat.name, // Show name in the dropdown
+  }))}
+  value={selectedCategories}
+  tagRender={(props) => {
+    const { label, value, closable, onClose } = props;
+    const category = categories?.find(cat => cat._id === value);
+    return (
+      <Tag 
+        closable={closable} 
+        onClose={onClose} 
+        style={{ marginRight: 3 }}
+      >
+        {category ? category.name : label} {/* Show category name */}
+      </Tag>
+    );
+  }}
+/>
 
+            </Form.Item>
             <Form.Item
               name="cost"
               label="Cost"
-              rules={[
-                { required: true, message: 'Please add at least one cost' },
-              ]}
+              rules={[{ required: true, message: 'Please add at least one cost' }]}
             >
-              <Form.List name="cost">
+              <Form.List
+                name="cost"
+                rules={[
+                  {
+                    validator: async (_, costs) => {
+                      if (!costs || costs.length < 1) {
+                        return Promise.reject(new Error('At least one cost is required'));
+                      }
+                    },
+                  },
+                ]}
+              >
                 {(fields, { add, remove }) => (
                   <>
                     {fields.map(({ key, name, ...restField }) => (
-                      <div
+                      <Space
                         key={key}
-                        style={{ display: 'flex', marginBottom: 8, gap: 8 }}
+                        style={{ display: 'flex', marginBottom: 8 }}
+                        align="baseline"
                       >
                         <Form.Item
                           {...restField}
-                          name={[name, 'currency']}
-                          rules={[
-                            { required: true, message: 'Missing currency' },
-                          ]}
+                          name={[name, 'cost']}
+                          rules={[{ required: true, message: 'Missing cost' }]}
                         >
-                          <Input placeholder="Currency" />
+                          <InputNumber placeholder="Cost" min={0} />
                         </Form.Item>
                         <Form.Item
                           {...restField}
-                          name={[name, 'cost']}
-                          rules={[{ required: true, message: 'Missing price' }]}
+                          name={[name, 'currency']}
+                          rules={[{ required: true, message: 'Missing currency' }]}
+                          initialValue="USD"
                         >
-                          <InputNumber placeholder="Cost" min={0} />
+                          <Input placeholder="Currency" />
                         </Form.Item>
                         <Button onClick={() => remove(name)} type="link" danger>
                           Delete
                         </Button>
-                      </div>
+                      </Space>
                     ))}
-                    <Button
-                      type="dashed"
-                      onClick={() => add()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Volume
-                    </Button>
+                    <Form.Item>
+                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                        Add Cost
+                      </Button>
+                    </Form.Item>
                   </>
                 )}
               </Form.List>
             </Form.Item>
-
-            <Form.Item
-              name="images"
-              label="Images"
-              valuePropName="fileList"
-              getValueFromEvent={(e) => {
-                if (Array.isArray(e)) {
-                  return e;
-                }
-                return e?.fileList;
-              }}
-            >
-              <Upload
-                listType="picture-card"
-                fileList={fileList}
-                onPreview={handlePreview}
-                onChange={handleChange}
-                onRemove={handleRemove}
-                customRequest={async ({ file, onSuccess }) => {
-                  if (file instanceof File) {
-                    try {
-                      await handleUpload(file);
-                      onSuccess?.("ok");
-                    } catch (error) {
-                      console.error('Upload failed:', error);
-                    }
-                  }
-                }}
-              >
-                {fileList.length >= 8 ? null : uploadButton}
-              </Upload>
-            </Form.Item>
-
             <Form.Item
               name="isAvailable"
               label="Available"
               valuePropName="checked"
+              initialValue={true}
             >
               <Switch />
             </Form.Item>
-          </>
-        </div>
+          </Panel>
 
-        <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-          {renderCategorySpecificFields()}
-        </div>
+          <Panel header="Images" key="2">
+            <Form.Item
+              name="images"
+              label="Product Images"
+              rules={[{ required: true, message: 'Please upload at least one image' }]}
+              initialValue={[]}
+            >
+              <Upload
+                listType="picture-card"
+                fileList={fileList}
+                beforeUpload={(file) => {
+                  const isImage = file.type.startsWith('image/');
+                  if (!isImage) {
+                    message.error('You can only upload image files!');
+                  }
+                  return isImage;
+                }}
+                customRequest={async ({ file, onSuccess, onError }) => {
+                  try {
+                    if (file instanceof File) {
+                      await handleUpload(file);
+                      onSuccess?.('ok');
+                    }
+                  } catch (error) {
+                    onError?.(error as Error);
+                  }
+                }}
+                onRemove={(file) => {
+                  const index = fileList.indexOf(file);
+                  const newFileList = fileList.slice();
+                  newFileList.splice(index, 1);
+                  setFileList(newFileList);
+
+                  // Also update form images
+                  const currentImages = form.getFieldValue('images') || [];
+                  const newImages = [...currentImages];
+                  newImages.splice(index, 1);
+                  form.setFieldsValue({ images: newImages });
+
+                  return true;
+                }}
+              >
+                {fileList.length >= 8 ? null : (
+                  <div>
+                    <PlusOutlined />
+                    <div style={{ marginTop: 8 }}>Upload</div>
+                  </div>
+                )}
+              </Upload>
+            </Form.Item>
+          </Panel>
+
+          {selectedCategories.length > 0 && (
+            <Panel header="Category-Specific Details" key="3">
+              {renderCategorySpecificFields()}
+            </Panel>
+          )}
+        </Collapse>
       </Form>
-    </Modal>
+    </Drawer>
   );
 };
 

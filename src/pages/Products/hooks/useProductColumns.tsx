@@ -51,6 +51,7 @@ export const useProductColumns = ({ onEdit, onDelete }: UseProductColumnsProps):
     title: 'Actions',
     key: 'actions',
     render: (_, record) => (
+      console.log(record),
       <Space size="middle">
         <Button
           type="text"

@@ -74,7 +74,12 @@ const Products: React.FC = () => {
       render: (_, record) => (
         <Space>
           <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <DeleteButton onClick={() => handleDelete(record._id!)} />
+          <Popconfirm
+            title={`Delete ${record.name}?`}
+            onConfirm={() => handleDelete(record._id!)}
+          >
+            <Button danger>Delete</Button>
+          </Popconfirm>
         </Space>
       ),
     },
