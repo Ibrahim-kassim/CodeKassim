@@ -1,9 +1,12 @@
-import React from 'react'
+import React from 'react';
 
-const Cart = () => {
+const Cart: React.FC = () => {
   return (
-    <div>Cart</div>
-  )
-}
+    <div>
+      <h1>Shopping Cart</h1>
+      {/* Cart content will be added here */}
+    </div>
+  );
+};
 
-export default Cart
+export default Cart;

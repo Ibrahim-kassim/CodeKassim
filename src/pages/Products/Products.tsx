@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Popconfirm, Radio, Tag } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Table, Button, Popconfirm, Radio } from 'antd';
 import { useProductActions } from './hooks/useProductActions';
 import ProductModal from './components/ProductModal';
-import { Product } from '../../models/product.model';
-import { AddButton, DeleteButton } from '../../generalComponents';
+import { AddButton } from '../../generalComponents';
 import { useCategoryActions } from '../Catigories/hooks/useCategoryActions';
-import { Category } from '../../models/category.model';
+import { useProductColumns } from './hooks/useProductColumns';
 
 const Products: React.FC = () => {
   const {
@@ -39,51 +37,7 @@ const Products: React.FC = () => {
           product.categories.some((cat) => cat._id === selectedCategoryFilter)
         );
 
-  const columns: ColumnsType<Product> = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-    },
-    {
-      title: 'Categories',
-      dataIndex: 'categories',
-      key: 'categories',
-      render: (categories: Category[]) =>
-        categories.map((cat) => (
-          <Tag color="blue" key={cat._id}>
-            {cat.name}
-          </Tag>
-        )),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'isAvailable',
-      key: 'isAvailable',
-      render: (isAvailable: boolean) =>
-        isAvailable ? 'Available' : 'Not Available',
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <Popconfirm
-            title={`Delete ${record.name}?`}
-            onConfirm={() => handleDelete(record._id!)}
-          >
-            <Button danger>Delete</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const columns = useProductColumns({ onEdit: handleEdit, onDelete: handleDelete });
 
   return (
     <div className="space-y-6">

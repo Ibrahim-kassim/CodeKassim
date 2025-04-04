@@ -1,139 +1,132 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import { LogoutOutlined, LoginOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { ROUTES } from "../../constants/routes";
-import { productCategories } from "../../constants/categories";
+import { AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import ProductsMenu from "./ProductsMenu";
 import MobileProductMenu from "./MobileProductMenu";
+import { useAllCategories } from "../../queries/category.query";
 
-const NavMenu = ({ onItemClick }: { onItemClick?: () => void }) => {
+const NavMenu = ({ onItemClick, activeCategory, setActiveCategory }: { onItemClick?: () => void, activeCategory: string | null, setActiveCategory: (category: string | null) => void }) => {
   const [showProductsMenu, setShowProductsMenu] = useState(false);
-  const navigate = useNavigate();
+  const [isMenuLocked, setIsMenuLocked] = useState(false);
   const token = localStorage.getItem("token");
   const isMobile = window.innerWidth < 768;
+  const { data: categories = [] } = useAllCategories();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    if (onItemClick) onItemClick();
     navigate(ROUTES.HOME);
   };
 
-  const handleLogin = () => {
-    if (onItemClick) onItemClick();
-    navigate(ROUTES.Auth);
+  const toggleProductsMenu = () => {
+    if (showProductsMenu) {
+      setShowProductsMenu(false);
+      setIsMenuLocked(false);
+      setActiveCategory(null);
+    } else {
+      setShowProductsMenu(true);
+      setIsMenuLocked(true);
+    }
   };
 
-  const toggleProductsMenu = () => {
-    if (isMobile) {
-      setShowProductsMenu(!showProductsMenu);
+  const handleMouseEnter = () => {
+    if (!isMenuLocked) {
+      setShowProductsMenu(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isMenuLocked) {
+      setShowProductsMenu(false);
+      setActiveCategory(null);
     }
   };
 
   return (
-    <ul className="flex flex-col md:flex-row md:space-x-6 space-y-4 md:space-y-0 text-gray-800 font-medium">
-      <li>
-        <NavLink
-          to={ROUTES.HOME}
-          onClick={onItemClick}
-          className={({ isActive }) =>
-            `transition duration-200 text-lg px-2 py-1 rounded-md ${
-              isActive ? "bg-red-500 text-white shadow-lg" : "hover:text-red-500"
-            }`
-          }
-        >
-          Home
-        </NavLink>
-      </li>
-      <li className="md:relative">
-        <div
-          onMouseEnter={() => !isMobile && setShowProductsMenu(true)}
-          onMouseLeave={() => !isMobile && setShowProductsMenu(false)}
+    <nav>
+      <ul className="flex flex-col md:flex-row items-center">
+        <li className="relative group">
+          <NavLink
+            to={ROUTES.HOME}
+            onClick={onItemClick}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-base font-medium ${
+                isActive ? "text-red-500" : "text-gray-700 hover:text-red-500"
+              }`
+            }
+          >
+            Home
+          </NavLink>
+        </li>
+        <li 
+          className="relative group"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <button
-            onClick={toggleProductsMenu}
-            className={`transition duration-200 text-lg px-2 py-1 rounded-md  text-left ${
-              showProductsMenu ? "text-red-500" : "hover:text-red-500"
+            className={`block px-4 py-2 text-base font-medium ${
+              showProductsMenu ? "text-red-500" : "text-gray-700 hover:text-red-500"
             }`}
+            onClick={toggleProductsMenu}
           >
-            Products
+            Categories
           </button>
-          <AnimatePresence>
-            {showProductsMenu && (
-              <>
-                {/* Desktop Menu */}
-                <div className="hidden md:block absolute left-0 right-0 transform -translate-x-2">
-                  <ProductsMenu categories={productCategories} />
-                </div>
-                {/* Mobile Menu */}
-                <MobileProductMenu 
-                  categories={productCategories}
-                  onItemClick={onItemClick}
-                />
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-      </li>
-      <li>
-        <NavLink
-          to={ROUTES.CART}
-          onClick={onItemClick}
-          className={({ isActive }) =>
-            `transition duration-200 text-lg px-2 py-1 rounded-md ${
-              isActive ? "bg-red-500 text-white shadow-lg" : "hover:text-red-500"
-            }`
-          }
-        >
-          Cart
-        </NavLink>
-      </li>
-      <li>
-        <NavLink
-          to={ROUTES.CHECKOUT}
-          onClick={onItemClick}
-          className={({ isActive }) =>
-            `transition duration-200 text-lg px-2 py-1 rounded-md ${
-              isActive ? "bg-red-500 text-white shadow-lg" : "hover:text-red-500"
-            }`
-          }
-        >
-          Checkout
-        </NavLink>
-      </li>
-      <li>
-        <NavLink
-          to={ROUTES.CONTACT}
-          onClick={onItemClick}
-          className={({ isActive }) =>
-            `transition duration-200 text-lg px-2 py-1 rounded-md ${
-              isActive ? "bg-red-500 text-white shadow-lg" : "hover:text-red-500"
-            }`
-          }
-        >
-          Contact
-        </NavLink>
-      </li>
-      <li>
-        {token ? (
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-1 text-lg px-2 py-1 text-red-500 hover:text-red-600 transition duration-200"
+          {showProductsMenu && (
+            <div className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg">
+              <ProductsMenu 
+                categories={categories} 
+                onClose={() => {
+                  if (!isMenuLocked) {
+                    setShowProductsMenu(false);
+                    setActiveCategory(null);
+                  }
+                }}
+                activeCategory={activeCategory}
+                setActiveCategory={setActiveCategory}
+              />
+            </div>
+          )}
+        </li>
+        <li className="relative group">
+          <NavLink
+            to={ROUTES.ABOUT}
+            onClick={onItemClick}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-base font-medium ${
+                isActive ? "text-red-500" : "text-gray-700 hover:text-red-500"
+              }`
+            }
           >
-            <LogoutOutlined />
-            <span>Logout</span>
-          </button>
-        ) : (
-          <button
-            onClick={handleLogin}
-            className="flex items-center space-x-1 text-lg px-2 py-1 text-gray-800 hover:text-red-500 transition duration-200"
+            About Us
+          </NavLink>
+        </li>
+        <li className="relative group">
+          <NavLink
+            to={ROUTES.CONTACT}
+            onClick={onItemClick}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-base font-medium ${
+                isActive ? "text-red-500" : "text-gray-700 hover:text-red-500"
+              }`
+            }
           >
-            <LoginOutlined />
-            <span>Login</span>
-          </button>
+            Contact Us
+          </NavLink>
+        </li>
+        {token && (
+          <li className="relative group">
+            <button
+              onClick={handleLogout}
+              className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-red-500"
+            >
+              Logout
+            </button>
+          </li>
         )}
-      </li>
-    </ul>
+      </ul>
+    </nav>
   );
 };
 

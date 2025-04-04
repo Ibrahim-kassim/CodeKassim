@@ -1,29 +1,29 @@
-import React from "react";
-import { Form, Input } from "antd";
+import React from 'react';
+import { Form, Input } from 'antd';
+import { Rule } from 'antd/es/form';
+import { NamePath } from 'antd/es/form/interface';
 
-type Props = {
-  disabled?: boolean;
-  id: string;
+interface Props {
+  id: NamePath;
   label: string;
   required?: boolean;
-  dataCy?: string;
-};
+  type?: 'text' | 'textarea';
+  rules?: Rule[];
+}
 
-export default function TextField({
-  disabled,
-  id,
-  label,
-  required,
-  dataCy,
-}: Props) {
+const TextField: React.FC<Props> = ({ id, label, required, type = 'text', rules = [] }) => {
+  const defaultRules = required ? [{ required: true, message: `Please enter ${label}` }] : [];
+  const InputComponent = type === 'textarea' ? Input.TextArea : Input;
+
   return (
     <Form.Item
-      key={id}
-      label={label}
       name={id}
-      rules={[{ required, message: "Required" }]}
+      label={label}
+      rules={[...defaultRules, ...rules]}
     >
-      <Input disabled={disabled} data-cy={dataCy} />
+      <InputComponent />
     </Form.Item>
   );
-}
+};
+
+export default TextField;

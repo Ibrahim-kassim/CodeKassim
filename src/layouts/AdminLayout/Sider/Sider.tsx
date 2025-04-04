@@ -7,7 +7,9 @@ import {
   MenuUnfoldOutlined,
   DashboardOutlined,
   ShoppingOutlined,
-  ProductOutlined
+  ProductOutlined,
+  ContactsOutlined,
+  OrderedListOutlined
 } from "@ant-design/icons";
 import { ROUTES } from "../../../constants/routes";
 
@@ -16,18 +18,28 @@ const { Sider } = Layout;
 const ROUTE_ITEMS = [
   {
     label: 'Overview',
-    route: `${ROUTES.DASHBOARD}/${ROUTES.OVERVIEW}`,
+    route: ROUTES.OVERVIEW,
     icon: <DashboardOutlined />,
   },
   {
     label: 'Categories',
-    route: `${ROUTES.DASHBOARD}/${ROUTES.CATIGORIES}`,
+    route: ROUTES.ADMIN_CATEGORIES,
     icon: <ShoppingOutlined />,
   },
   {
     label: 'Products',
-    route: `${ROUTES.DASHBOARD}/${ROUTES.PRODUCTS}`,
+    route: ROUTES.ADMIN_PRODUCTS,
     icon: <ProductOutlined />,
+  },
+  {
+    label: 'Contacts',
+    route: ROUTES.ADMIN_CONTACT,
+    icon: <ContactsOutlined />,
+  },
+  {
+    label: 'Orders',
+    route: ROUTES.ADMIN_CONTACT, // TODO: Add orders route
+    icon: <OrderedListOutlined />,
   },
 ];
 

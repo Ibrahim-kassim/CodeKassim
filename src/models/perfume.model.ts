@@ -5,7 +5,6 @@ export interface Perfume extends Product {
   sizes: {
     size: string;
     price: number;
-    currency: string;
   }[];
   scent: string;
   gender: "Men" | "Women" | "Unisex";

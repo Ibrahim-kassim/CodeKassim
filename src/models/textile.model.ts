@@ -2,12 +2,12 @@ import { Product } from "./product.model";
 
 export interface Textile extends Product {
   material: string;
-  size: {
+  sizes: {
     size: string;
     price: number;
-    currency: string;
-  };
-  color: string;
+  }[];
+  color: string[];
   brand: string;
+  code: string; 
   careInstructions: string;
 }

@@ -7,7 +7,8 @@ export interface Appliance extends Product {
   sizes: {
     size: string;
     price: number;
-    currency: string;
   }[];
-  warranty: number;
+  color: string[];
+  capacity: string;
+  code: string;
 }

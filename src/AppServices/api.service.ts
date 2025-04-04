@@ -18,6 +18,7 @@ import {
 import { Category } from "../models/category.model";
 import UserService from "../services/user.service";
 import { Product } from "../models/product.model";
+import { ContactUs } from "../models/contactUs.model";
 
 interface Input {
   config: AxiosRequestConfig;
@@ -110,6 +111,14 @@ export default class Api {
       ...(config?.headers || {}),
     };
     return this.axios.delete<T>(url, { ...config, headers });
+  };
+
+  public patch = <T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<{ data: T }> => {
+    const headers = {
+      ...this.getAuthHeaders(),
+      ...(config?.headers || {}),
+    };
+    return this.axios.patch(url, data, { ...config, headers });
   };
 
   // Generic functions for soukOnline
@@ -285,6 +294,58 @@ export default class Api {
 
   public createEntityRecursive = <T>(entity: ENTITIES, payload: T) => {
     return this.post<T>(`${entity}/${HTTP_PATH.ADD_RECURSIVE}`, payload);
+  };
+
+  // Contact Us Methods
+  public getContacts = async <T>() => {
+    const { data } = await this.get<ContactUs[]>(ENTITIES.ALL_CONTACTS);
+    return data;
+  };
+
+  public getContact = async (phone: string) => {
+    const { data } = await this.get<ContactUs>(`${ENTITIES.ONE_CONTACT}/${phone}`);
+    return data;
+  };
+
+  public createContact = async (payload: ContactUs) => {
+    const response = await this.createNewEntityForSouk<ContactUs>(
+      ENTITIES.ADD_CONTACT,
+      payload
+    );
+    return response?.data;
+  };
+
+  public deleteContact = async (payload: string) => {
+    const { data } = await this.delete<{ message: string }>(
+      `${ENTITIES.DELETE_CONTACT}/${payload}`
+    );
+    return data;
+  };
+
+  public updateContact = async (payload: ContactUs) => {
+    const { _id, ...rest } = payload;
+
+    const response = await this.updateExistingEntityForSouk<ContactUs>(
+      `${ENTITIES.UPDATE_CONTACT}/${_id}`,
+      rest
+    );
+
+    return response?.data;
+  };
+
+  public readMessage = async (contactId: string, messageIndex: number) => {
+    const { data } = await this.patch<{ message: string }>(
+      `contacts/${contactId}/messages/${messageIndex}/status`,
+      { isRead: true }  
+    );
+    return data;
+  };
+
+  public deleteMessage = async (contactId: string, messageIndex: number) => {
+    const { data } = await this.delete<{ message: string }>(
+      `contacts/${contactId}/messages/${messageIndex}`
+    );
+    return data;
   };
 
   // Product Methods

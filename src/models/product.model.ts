@@ -5,10 +5,7 @@ export interface Product {
   name: string;
   description: string;
   categories: Category[];
-  cost: {
-    cost: number;
-    currency: string;
-  }[];
+  cost: number;
   images: string[];
   isAvailable?: boolean;
   specifications: Map<string, string>;
