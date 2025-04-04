@@ -1,27 +1,47 @@
-// src/routes/AdminRoutes.ts
-import React from "react";
+// src/routes/UserRoutes.ts
+import React, { lazy } from "react";
 import { ROUTES } from "../constants/routes";
 import { Navigate } from "react-router-dom";   
 import UserLayout from "../layouts/UserLayout/UserLayout";
-import Home from "../pages/user/Home/";
-import Cart from "../pages/user/Cart/";
-import Checkout from "../pages/user/Checkout/";
-import Contact from "../pages/user/Contact/";
-import Products from "../pages/user/Products/";
+import Cart from "../pages/user/Cart";
+import Checkout from "../pages/user/Checkout";
+import Products from "../pages/user/Products";
+
+const LazyHome = lazy(() => import("../pages/user/Home/Home"));
+const LazyContact = lazy(() => import("../pages/user/Contact/Contact"));
+const LazyAbout = lazy(() => import("../pages/user/About/About"));
 
 export const UserRoutes = {
-  path: ROUTES.default,    
+  path: "/",
   element: React.createElement(UserLayout),
   children: [
-    Home,   
-    Cart,
-    Checkout,
-    Contact,
-    Products,
     {
-      path: "",
-      element: React.createElement(Navigate, { to: ROUTES.HOME, replace: true }),
-    },  
-              
-  ],
+      path: ROUTES.HOME,
+      element: React.createElement(LazyHome)
+    },
+    {
+      path: ROUTES.CART,
+      element: React.createElement(Cart)
+    },
+    {
+      path: ROUTES.CHECKOUT,
+      element: React.createElement(Checkout)
+    },
+    {
+      path: ROUTES.CONTACT,
+      element: React.createElement(LazyContact)
+    },
+    {
+      path: ROUTES.PRODUCTS,
+      element: React.createElement(Products)
+    },
+    {
+      path: ROUTES.ABOUT,
+      element: React.createElement(LazyAbout)
+    },
+    {
+      path: "*",
+      element: React.createElement(Navigate, { to: ROUTES.HOME, replace: true })
+    }
+  ]
 };

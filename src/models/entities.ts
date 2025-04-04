@@ -4,6 +4,15 @@ export enum ENTITIES {
   LOGIN = 'login',
   REGISTER = 'register',
 
+  // Contact Us
+  ALL_CONTACTS = 'contacts/all',
+  ADD_CONTACT = 'contacts/add',
+  ONE_CONTACT = 'contacts/phone/:phone',
+  DELETE_CONTACT = 'contacts',
+  UPDATE_CONTACT = 'contacts',
+  READ_MESSAGE = 'contacts/:contactId/messages/:messageIndex/status',
+  DELETE_MESSAGE = 'contacts/:contactId/messages/:messageIndex',
+
   // Product Management
   ALL_PRODUCTS = 'products/allProducts',
   PRODUCTS_OF_CATEGORY = 'products/:ID',

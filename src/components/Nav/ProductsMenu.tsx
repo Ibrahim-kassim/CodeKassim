@@ -1,69 +1,76 @@
-import { motion } from "framer-motion";
-import { NavLink } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Category } from "../../models/category.model";
 import { RightOutlined } from "@ant-design/icons";
-import { useState } from 'react';
-
-interface Category {
-  title: string;
-  items: {
-    name: string;
-    path: string;
-  }[];
-}
 
 interface ProductsMenuProps {
-  categories?: Category[];
+  categories: Category[];
+  onClose?: () => void;
+  activeCategory: string | null;
+  setActiveCategory: (id: string | null) => void;
 }
 
-const ProductsMenu = ({ categories = [] }: ProductsMenuProps) => {
-  // const [currentIndex, setCurrentIndex] = useState(0);
+const ProductsMenu = ({ categories, onClose, activeCategory, setActiveCategory }: ProductsMenuProps) => {
+  // Get main categories (those without parent)
+  const mainCategories = categories.filter(cat => !cat.parentCategory);
 
-  // const visibleCategories = categories.slice(currentIndex, currentIndex + 2);
+  // Get subcategories for a main category
+  const getSubCategories = (parentId: string) => {
+    return categories.filter(cat => cat.parentCategory === parentId);
+  };
 
-  // const handleNext = () => {
-  //   if (currentIndex + 2 < categories.length) {
-  //     setCurrentIndex((prev) => prev + 2);
-  //   }
-  // };
+  // Check if a category has subcategories
+  const hasSubCategories = (categoryId: string | undefined) => {
+    return categories.some(cat => cat.parentCategory === categoryId);
+  };
 
-  // const handlePrev = () => {
-  //   if (currentIndex > 0) {
-  //     setCurrentIndex((prev) => prev - 2);
-  //   }
-  // };
+  const handleCategoryClick = () => {
+    onClose?.();
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="absolute top-full left-0 max-w-[50vw] w-screen bg-white shadow-lg py-6 mt-1 z-50 border-t border-gray-100"
-    >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-          {categories.map((category, index) => (
-            <div key={index} className="space-y-2 md:space-y-3">
-              <h3 className="font-semibold text-base md:text-lg text-gray-800 mb-2 md:mb-3 pb-2 border-b border-gray-100 flex items-center justify-between">
-                {category.title}
-                <RightOutlined className="md:hidden text-xs text-gray-400" />
-              </h3>
-              <div className="grid grid-cols-1 gap-1">
-                {category.items.map((item, itemIndex) => (
-                  <NavLink
-                    key={itemIndex}
-                    to={item.path}
-                    className="group flex items-center justify-between py-1.5 text-gray-600 hover:text-red-500 transition-colors"
-                  >
-                    <span>{item.name}</span>
-                    <RightOutlined className="hidden md:block opacity-0 group-hover:opacity-100 text-xs transition-opacity" />
-                  </NavLink>
-                ))}
+    <div className="relative">
+      <div className="py-2 w-48">
+        {mainCategories.map((category) => (
+          <div
+            key={category._id}
+            className="relative group"
+          >
+            <Link
+              to={`/categories/${category._id}`}
+              className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500"
+              onClick={handleCategoryClick}
+              onMouseEnter={() => category._id ? setActiveCategory(category._id) : null}
+            >
+              <span>{category.name}</span>
+              {hasSubCategories(category._id) && (
+                <RightOutlined className="text-xs" />
+              )}
+            </Link>
+            {/* Subcategories dropdown */}
+            {hasSubCategories(category._id) && activeCategory === category._id && (
+              <div 
+                className="absolute left-full top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg"
+                onMouseLeave={() => setActiveCategory(null)}
+              >
+                <div className="py-2">
+                  {getSubCategories(category._id).map((subCategory) => (
+                    <Link
+                      key={subCategory._id}
+                      to={`/categories/${subCategory._id}`}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500"
+                      onClick={handleCategoryClick}
+                    >
+                      {subCategory.name}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        ))}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

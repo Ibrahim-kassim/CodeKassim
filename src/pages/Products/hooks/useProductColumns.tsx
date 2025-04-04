@@ -4,6 +4,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import { Product } from '../../../models/product.model';
 import { Category } from '../../../models/category.model';
+import { DeleteButton, EditButton } from '../../../generalComponents';
 
 interface UseProductColumnsProps {
   onEdit: (product: Product) => void;
@@ -50,23 +51,24 @@ export const useProductColumns = ({ onEdit, onDelete }: UseProductColumnsProps):
   {
     title: 'Actions',
     key: 'actions',
-    render: (_, record) => (
-      console.log(record),
-      <Space size="middle">
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={() => onEdit(record)}
-        />
-        <Popconfirm
-          title="Are you sure you want to delete this product?"
-          onConfirm={() => onDelete(record._id!)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="text" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      </Space>
-    ),
+    render: (_, record: Product) => {
+      const hasId = typeof record._id === 'string' && record._id.length > 0;
+
+      return (
+        <Space>
+          <EditButton onClick={() => onEdit(record)} />
+          {hasId && (
+            <Popconfirm
+              title="Are you sure you want to delete this product?"
+              onConfirm={() => onDelete(record._id!)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <DeleteButton />
+            </Popconfirm>
+          )}
+        </Space>
+      );
+    },
   },
 ];
