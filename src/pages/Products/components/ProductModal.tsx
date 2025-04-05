@@ -25,9 +25,11 @@ import { Appliance } from '../../../models/appliance.model';
 
 const { Panel } = Collapse;
 
-interface Cost {
-  cost: number;
-  currency: string;
+type ProductType = 'perfume' | 'textile' | 'appliance';
+
+interface Size {
+  size: string;
+  price: number;
 }
 
 interface ProductModalProps {
@@ -54,13 +56,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const mainCategories = categories?.filter((cat) => !cat.parentCategory) || [];
 
+  interface Category {
+    _id: string;
+    name: string;
+    parentCategory?: {
+      _id: string;
+    };
+  }
+
   const getAvailableCategories = (selectedCats: string[]) => {
     if (selectedCats.length === 0) {
       return mainCategories; // Show only main categories when nothing is selected
     }
   
     const lastSelectedCategory = selectedCats[selectedCats.length - 1]; // Get the most recent selection
-    return categories?.filter(cat => cat.parentCategory && cat.parentCategory._id === lastSelectedCategory) || [];
+    return (categories as Category[] | undefined)?.filter(cat => 
+      cat.parentCategory && cat.parentCategory._id === lastSelectedCategory
+    ) || [];
   };
   
   const handleCategoryChange = (values: string[]) => {
@@ -90,8 +102,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (visible) {
       if (initialData) {
         const categoryIds = initialData.categories
-  ?.map(cat => cat._id)
-  .filter((id): id is string => id !== undefined) || [];
+          ?.map(cat => cat._id)
+          .filter((id): id is string => id !== undefined) || [];
 
         // Set all form values including category-specific fields
         const formValues: any = {
@@ -101,19 +113,36 @@ const ProductModal: React.FC<ProductModalProps> = ({
           isAvailable: initialData.isAvailable,
           specifications: initialData.specifications,
           images: initialData.images,
+          cost: initialData.cost,
         };
 
-        // Handle cost array
-        if (Array.isArray(initialData.cost)) {
-          formValues.cost = initialData.cost as Cost[];
-        } else if (initialData.cost) {
-          const cost = initialData.cost as Cost;
-          formValues.cost = [
-            {
-              cost: cost.cost,
-              currency: cost.currency || 'USD',
-            },
-          ];
+        // Handle product-specific fields
+        if ('brand' in initialData) {
+          formValues.brand = initialData.brand;
+        }
+        
+        if ('sizes' in initialData) {
+          formValues.sizes = initialData.sizes;
+        }
+
+        // Handle perfume-specific fields
+        if ('scent' in initialData) {
+          formValues.scent = initialData.scent;
+          formValues.gender = initialData.gender;
+        }
+
+        // Handle textile-specific fields
+        if ('material' in initialData) {
+          formValues.material = initialData.material;
+          formValues.color = initialData.color;
+          formValues.careInstructions = initialData.careInstructions;
+        }
+
+        // Handle appliance-specific fields
+        if ('powerConsumption' in initialData) {
+          formValues.powerConsumption = initialData.powerConsumption;
+          formValues.rooms = initialData.rooms;
+          formValues.capacity = initialData.capacity;
         }
 
         // Set form values
@@ -201,16 +230,105 @@ const ProductModal: React.FC<ProductModalProps> = ({
         return;
       }
 
-      await onSubmit(values);
+      // Ensure all prices are in USD
+      if (values.sizes) {
+        values.sizes = values.sizes.map((size: Size) => ({
+          ...size,
+          price: Number(size.price)
+        }));
+      }
+
+      // Handle different product types based on main category
+      const mainCategory = values.categories.find((catId: string) =>
+        mainCategories.some((main) => main._id === catId)
+      );
+
+      const productData = {
+        ...values,
+        cost: values.cost || 0, // Default cost if not provided
+        isAvailable: values.isAvailable ?? true, // Default to available if not specified
+        specifications: values.specifications || {}, // Default empty specifications
+        images: values.images || [], // Default empty images array
+      };
+
+      // Remove any undefined or null values
+      Object.keys(productData).forEach(key => {
+        if (productData[key] === undefined || productData[key] === null) {
+          delete productData[key];
+        }
+      });
+
+      await onSubmit(productData);
       form.resetFields();
       onCancel();
     } catch (error) {
       console.error('Validation failed:', error);
+      message.error('Please fill in all required fields correctly');
     }
   };
 
+  const renderSizeFields = () => (
+    <Form.Item
+      label="Sizes and Prices"
+      required
+      style={{ marginBottom: 0 }}
+    >
+      <Form.List
+        name="sizes"
+        rules={[
+          {
+            validator: async (_, sizes) => {
+              if (!sizes || sizes.length < 1) {
+                return Promise.reject(new Error('At least one size is required'));
+              }
+            },
+          },
+        ]}
+      >
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name, ...restField }) => (
+              <Space
+                key={key}
+                style={{ display: 'flex', marginBottom: 8 }}
+                align="baseline"
+              >
+                <Form.Item
+                  {...restField}
+                  name={[name, 'size']}
+                  rules={[{ required: true, message: 'Missing size' }]}
+                >
+                  <Input placeholder="Size" />
+                </Form.Item>
+                <Form.Item
+                  {...restField}
+                  name={[name, 'price']}
+                  rules={[{ required: true, message: 'Missing price (USD)' }]}
+                >
+                  <InputNumber 
+                    placeholder="Price in USD" 
+                    min={0} 
+                    prefix="$"
+                    precision={2}
+                  />
+                </Form.Item>
+                <Button onClick={() => remove(name)} type="link" danger>
+                  Delete
+                </Button>
+              </Space>
+            ))}
+            <Form.Item>
+              <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                Add Size and Price
+              </Button>
+            </Form.Item>
+          </>
+        )}
+      </Form.List>
+    </Form.Item>
+  );
+
   const renderCategorySpecificFields = () => {
-    // Get the first main category selected (if any)
     const mainCategory = selectedCategories.find((catId) =>
       mainCategories.some((main) => main._id === catId)
     );
@@ -218,7 +336,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     if (!mainCategory) return null;
 
     switch (mainCategory) {
-      case '67c86bfeeee50cc264f911f8': //Perfume
+      case '67c86bfeeee50cc264f911f8': // Perfume
         return (
           <>
             <Form.Item
@@ -246,71 +364,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <Select.Option value="Unisex">Unisex</Select.Option>
               </Select>
             </Form.Item>
-            <Form.Item
-              label="Sizes"
-              required
-              style={{ marginBottom: 0 }}
-            >
-              <Form.List
-                name="sizes"
-                rules={[
-                  {
-                    validator: async (_, sizes) => {
-                      if (!sizes || sizes.length < 1) {
-                        return Promise.reject(new Error('At least one size is required'));
-                      }
-                    },
-                  },
-                ]}
-              >
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Space
-                        key={key}
-                        style={{ display: 'flex', marginBottom: 8 }}
-                        align="baseline"
-                      >
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'size']}
-                          rules={[{ required: true, message: 'Missing size' }]}
-                        >
-                          <Input placeholder="Size" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'price']}
-                          rules={[{ required: true, message: 'Missing price' }]}
-                        >
-                          <InputNumber placeholder="Price" min={0} />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[{ required: true, message: 'Missing currency' }]}
-                          initialValue="USD"
-                        >
-                          <Input placeholder="Currency" />
-                        </Form.Item>
-                        <Button onClick={() => remove(name)} type="link" danger>
-                          Delete
-                        </Button>
-                      </Space>
-                    ))}
-                    <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                        Add Size
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-            </Form.Item>
+            {renderSizeFields()}
           </>
         );
 
-      case '67dc2bdbbea1059b31737418': //textiles
+      case '67dc2bdbbea1059b31737418': // Textiles
         return (
           <>
             <Form.Item
@@ -329,8 +387,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Form.Item>
             <Form.Item
               name="color"
-              label="Color"
-              rules={[{ required: true, message: 'Please enter color' }]}
+              label="Colors"
+              rules={[{ required: true, message: 'Please enter colors' }]}
+            >
+              <Select mode="tags" placeholder="Add colors">
+                {/* Colors will be added dynamically as tags */}
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="code"
+              label="Product Code"
+              rules={[{ required: true, message: 'Please enter product code' }]}
             >
               <Input />
             </Form.Item>
@@ -341,71 +408,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
             >
               <Input.TextArea rows={4} />
             </Form.Item>
-            <Form.Item
-              label="Sizes"
-              required
-              style={{ marginBottom: 0 }}
-            >
-              <Form.List
-                name="sizes"
-                rules={[
-                  {
-                    validator: async (_, sizes) => {
-                      if (!sizes || sizes.length < 1) {
-                        return Promise.reject(new Error('At least one size is required'));
-                      }
-                    },
-                  },
-                ]}
-              >
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Space
-                        key={key}
-                        style={{ display: 'flex', marginBottom: 8 }}
-                        align="baseline"
-                      >
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'size']}
-                          rules={[{ required: true, message: 'Missing size' }]}
-                        >
-                          <Input placeholder="Size" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'price']}
-                          rules={[{ required: true, message: 'Missing price' }]}
-                        >
-                          <InputNumber placeholder="Price" min={0} />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[{ required: true, message: 'Missing currency' }]}
-                          initialValue="USD"
-                        >
-                          <Input placeholder="Currency" />
-                        </Form.Item>
-                        <Button onClick={() => remove(name)} type="link" danger>
-                          Delete
-                        </Button>
-                      </Space>
-                    ))}
-                    <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                        Add Size
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-            </Form.Item>
+            {renderSizeFields()}
           </>
         );
 
-      case '67dc8f84bc9305e3287ae843': //appliances
+      case '67dc8f84bc9305e3287ae843': // Appliances
         return (
           <>
             <Form.Item
@@ -416,23 +423,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <Input />
             </Form.Item>
             <Form.Item
-              name="warranty"
-              label="Warranty"
-              rules={[{ required: true, message: 'Please enter warranty' }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
               name="powerConsumption"
               label="Power Consumption"
-              rules={[{ required: true, message: 'Please enter Power Consumption' }]}
+              rules={[{ required: true, message: 'Please enter power consumption' }]}
             >
               <Input />
             </Form.Item>
             <Form.Item
               name="rooms"
-              label="Rooms"
-              rules={[{ required: true, message: 'Please select rooms' }]}
+              label="Suitable Rooms"
+              rules={[{ required: true, message: 'Please select suitable rooms' }]}
             >
               <Select mode="multiple">
                 <Select.Option value="living">Living Room</Select.Option>
@@ -443,66 +443,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
               </Select>
             </Form.Item>
             <Form.Item
-              label="Sizes"
-              required
-              style={{ marginBottom: 0 }}
+              name="color"
+              label="Colors"
+              rules={[{ required: true, message: 'Please enter colors' }]}
             >
-              <Form.List
-                name="sizes"
-                rules={[
-                  {
-                    validator: async (_, sizes) => {
-                      if (!sizes || sizes.length < 1) {
-                        return Promise.reject(new Error('At least one size is required'));
-                      }
-                    },
-                  },
-                ]}
-              >
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Space
-                        key={key}
-                        style={{ display: 'flex', marginBottom: 8 }}
-                        align="baseline"
-                      >
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'size']}
-                          rules={[{ required: true, message: 'Missing size' }]}
-                        >
-                          <Input placeholder="Size" />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'price']}
-                          rules={[{ required: true, message: 'Missing price' }]}
-                        >
-                          <InputNumber placeholder="Price" min={0} />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[{ required: true, message: 'Missing currency' }]}
-                          initialValue="USD"
-                        >
-                          <Input placeholder="Currency" />
-                        </Form.Item>
-                        <Button onClick={() => remove(name)} type="link" danger>
-                          Delete
-                        </Button>
-                      </Space>
-                    ))}
-                    <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                        Add Size
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
+              <Select mode="tags" placeholder="Add colors">
+                {/* Colors will be added dynamically as tags */}
+              </Select>
             </Form.Item>
+            <Form.Item
+              name="capacity"
+              label="Capacity"
+              rules={[{ required: true, message: 'Please enter capacity' }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              name="code"
+              label="Product Code"
+              rules={[{ required: true, message: 'Please enter product code' }]}
+            >
+              <Input />
+            </Form.Item>
+            {renderSizeFields()}
           </>
         );
       default:
@@ -593,57 +556,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </Form.Item>
             <Form.Item
               name="cost"
-              label="Cost"
-              rules={[{ required: true, message: 'Please add at least one cost' }]}
+              label="Cost (USD)"
+              rules={[{ required: true, message: 'Please enter the cost' }]}
             >
-              <Form.List
-                name="cost"
-                rules={[
-                  {
-                    validator: async (_, costs) => {
-                      if (!costs || costs.length < 1) {
-                        return Promise.reject(new Error('At least one cost is required'));
-                      }
-                    },
-                  },
-                ]}
-              >
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Space
-                        key={key}
-                        style={{ display: 'flex', marginBottom: 8 }}
-                        align="baseline"
-                      >
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'cost']}
-                          rules={[{ required: true, message: 'Missing cost' }]}
-                        >
-                          <InputNumber placeholder="Cost" min={0} />
-                        </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'currency']}
-                          rules={[{ required: true, message: 'Missing currency' }]}
-                          initialValue="USD"
-                        >
-                          <Input placeholder="Currency" />
-                        </Form.Item>
-                        <Button onClick={() => remove(name)} type="link" danger>
-                          Delete
-                        </Button>
-                      </Space>
-                    ))}
-                    <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                        Add Cost
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
+              <InputNumber
+                placeholder="Cost in USD"
+                min={0}
+                prefix="$"
+                precision={2}
+                style={{ width: '100%' }}
+              />
             </Form.Item>
             <Form.Item
               name="isAvailable"

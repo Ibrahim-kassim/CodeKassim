@@ -38,7 +38,7 @@ const ROUTE_ITEMS = [
   },
   {
     label: 'Orders',
-    route: ROUTES.ADMIN_CONTACT, // TODO: Add orders route
+    route: ROUTES.ADMIN_ORDERS,
     icon: <OrderedListOutlined />,
   },
 ];

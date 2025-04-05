@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
 import UserLayout from "../layouts/UserLayout/UserLayout";
 import AdminLayout from "../layouts/AdminLayout";
+import Orders from "../pages/Orders";
 
 // Lazy load components
 const Home = React.lazy(() => import("../pages/user/Home/Home"));
@@ -138,6 +139,14 @@ const AppRoutes = () => {
           element={
             <Suspense fallback={<LoadingFallback />}>
               <ContactUs />
+            </Suspense>
+          }
+        />
+        <Route
+          path="orders"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <Orders />
             </Suspense>
           }
         />

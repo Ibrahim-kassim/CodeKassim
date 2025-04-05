@@ -19,6 +19,7 @@ import { Category } from "../models/category.model";
 import UserService from "../services/user.service";
 import { Product } from "../models/product.model";
 import { ContactUs } from "../models/contactUs.model";
+import { Order } from "../models/order.model";
 
 interface Input {
   config: AxiosRequestConfig;
@@ -348,6 +349,37 @@ export default class Api {
     return data;
   };
 
+  //Order Methods
+  public getOrders = async <T>() => {
+    const { data } = await this.get<T[]>(ENTITIES.ORDERS);
+    return data;
+  }
+
+  public createOrder = async (payload: Order) => {
+    const response = await this.createNewEntityForSouk<Order>(
+      ENTITIES.ADD_ORDER,
+      payload
+    );
+    return response?.data;
+  };
+
+  public deleteOrder = async (payload: string) => {
+    const { data } = await this.delete<{ message: string }>(
+      `${ENTITIES.DELETE_ORDER}/${payload}`
+    );
+    return data;
+  };
+  
+  public updateOrder = async (payload: Order) => {
+    const { _id, ...rest } = payload;
+    
+    const response = await this.updateExistingEntityForSouk<Order>(
+      `${ENTITIES.UPDATE_ORDER}/${_id}`,
+      rest
+    );
+    return response?.data;
+  };
+  
   // Product Methods
   public getProducts = async <T>() => {
     const { data } = await this.get<Product[]>(ENTITIES.ALL_PRODUCTS);

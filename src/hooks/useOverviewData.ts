@@ -6,14 +6,44 @@ import {
   MessageOutlined,
   LineChartOutlined,
 } from "@ant-design/icons";
+import { useAllContacts } from "../queries/contactUs.query";
+import { useAllOrders } from "../queries/order.query";
+import { useAllProducts } from "../queries/products.query";
+import { Order } from "../models/order.model";
+import { Product } from "../models/product.model";
+import { ContactUs } from "../models/contactUs.model";
 
 export const useOverviewData = () => {
+  const {data:contacts} = useAllContacts();
+  const {data:orders} = useAllOrders();
+  const {data:products} = useAllProducts();
+
+  // Calculate total messages across all contacts
+  const totalMessages = ((contacts || []) as ContactUs[]).reduce((sum: number, contact: ContactUs) => 
+    sum + (contact.messages?.length || 0), 0);
+
+  // Calculate revenue from completed orders
+  const revenue = ((orders || []) as Order[]).reduce((sum: number, order: Order) => {
+    if (order.status === 'completed') {
+      return sum + ((order.products || []) as Product[]).reduce((orderSum: number, product: Product) => 
+        orderSum + (product.cost || 0), 0);
+    }
+    return sum;
+  }, 0);
+
+  // Calculate total cost of all products (inventory cost)
+  const totalCost = ((products || []) as Product[]).reduce((sum: number, product: Product) => 
+    sum + (product.cost || 0), 0);
+
+  // Calculate profit (revenue - total cost)
+  const profit = revenue - totalCost;
+
   const statsData = [
-    { title: "Orders", value: 1520, icon: ShoppingCartOutlined, color: "red" },
-    { title: "Revenue", value: "$12,430", icon: DollarCircleOutlined, color: "green" },
-    { title: "Clients", value: 320, icon: UserOutlined, color: "blue" },
-    { title: "Messages", value: 78, icon: MessageOutlined, color: "orange" },
-    { title: "Profits", value: "$3,980", icon: LineChartOutlined, color: "purple" },
+    { title: "Orders", value: orders?.length || 0, icon: ShoppingCartOutlined, color: "red" },
+    { title: "Revenue", value: `$${revenue.toLocaleString()}`, icon: DollarCircleOutlined, color: "green" },
+    { title: "Clients", value: contacts?.length || 0, icon: UserOutlined, color: "blue" },
+    { title: "Messages", value: totalMessages, icon: MessageOutlined, color: "orange" },
+    { title: "Profits", value: `$${profit.toLocaleString()}`, icon: LineChartOutlined, color: "purple" },
   ];
 
   const salesData = [

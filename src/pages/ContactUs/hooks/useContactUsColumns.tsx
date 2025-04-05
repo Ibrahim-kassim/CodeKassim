@@ -44,7 +44,11 @@ export function useContactUsColumns({
       render: (_, record: ContactUs) => {
         if (!record.messages?.length) return null;
         
-        const sortedMessages = [...record.messages].sort(
+        // Get the original indices before sorting
+        const messagesWithIndices = record.messages.map((msg, index) => ({ ...msg, originalIndex: index }));
+        
+        // Sort messages by date while preserving original indices
+        const sortedMessages = [...messagesWithIndices].sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         
@@ -65,13 +69,13 @@ export function useContactUsColumns({
                     <Button
                       type="text"
                       icon={<CheckOutlined />}
-                      onClick={() => onReadMessage(record._id!, 0)}
+                      onClick={() => onReadMessage(record._id!, latestMessage.originalIndex)}
                       title="Mark as Read"
                     />
                   )}
                   <Popconfirm
                     title="Delete this message?"
-                    onConfirm={() => onDeleteMessage(record._id!, 0)}
+                    onConfirm={() => onDeleteMessage(record._id!, latestMessage.originalIndex)}
                   >
                     <Button
                       type="text"
@@ -92,8 +96,8 @@ export function useContactUsColumns({
               <Collapse size="small" className="bg-transparent">
                 <Collapse.Panel header="View Message History" key="1">
                   <Space direction="vertical" className="w-full">
-                    {sortedMessages.slice(1).map((msg, index) => (
-                      <div key={index} className="border-b pb-2 last:border-b-0">
+                    {sortedMessages.slice(1).map((msg) => (
+                      <div key={msg.originalIndex} className="border-b pb-2 last:border-b-0">
                         <div className="flex items-center gap-2">
                           <Text>{msg.text}</Text>
                           <Tag color={msg.isRead ? 'green' : 'gold'}>
@@ -104,13 +108,13 @@ export function useContactUsColumns({
                               <Button
                                 type="text"
                                 icon={<CheckOutlined />}
-                                onClick={() => onReadMessage(record._id!, index + 1)}
+                                onClick={() => onReadMessage(record._id!, msg.originalIndex)}
                                 title="Mark as Read"
                               />
                             )}
                             <Popconfirm
                               title="Delete this message?"
-                              onConfirm={() => onDeleteMessage(record._id!, index + 1)}
+                              onConfirm={() => onDeleteMessage(record._id!, msg.originalIndex)}
                             >
                               <Button
                                 type="text"
