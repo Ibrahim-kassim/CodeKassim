@@ -22,9 +22,8 @@ const Contact = () => {
       name: values.name,
       email: values.email,
       phone: values.phone,
-      messages: values.message
+      message: values.message
     };
-    console.log('Contact data to send:', contactData);
 
     createContactMutation.mutate(contactData as any, {
       onSuccess: () => {
