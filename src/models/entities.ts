@@ -32,8 +32,10 @@ export enum ENTITIES {
   UPDATE_CATEGORY = 'categories/editCategory',
 
   // Order Management
-  ORDERS = 'orders',
-  CART = 'cart',
+  ORDERS = 'orders/all',
+  ADD_ORDER = 'orders/add',
+  DELETE_ORDER = 'orders',
+  UPDATE_ORDER = 'orders',
 
   // Reviews and Ratings
   REVIEWS = 'reviews',

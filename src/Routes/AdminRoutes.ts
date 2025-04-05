@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import Catigories from "../pages/Catigories/";
 import Products from "../pages/Products/";
 import ContactUs from "../pages/ContactUs";
+import Orders from "../pages/Orders/";
 
 export const AdminRoutes = {
   path: ROUTES.DASHBOARD,    
@@ -27,6 +28,10 @@ export const AdminRoutes = {
     {
       path: "contact",
       element: React.createElement(ContactUs)
+    },
+    {
+      path: "orders",
+      element: React.createElement(Orders)
     },
     {
       path: "",

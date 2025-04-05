@@ -1,25 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Select, Tag, Input, Space } from 'antd';
 import type { InputRef } from 'antd';
-import { Category } from '../../../models/category.model';
 import TextField from '../../../components/forms/components/TextField';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAllCategories } from '../../../queries/category.query';
 
-type CategoryFormData = {
+interface BaseCategory {
   name: string;
+  attributes?: string[];
+}
+
+interface CategoryWithId extends BaseCategory {
+  _id: string;
+  parentCategory: CategoryWithId | null;
+}
+
+interface CategoryFormData extends BaseCategory {
   parentCategory: string | null;
   attributes: string[];
-};
+}
 
-type Props = {
+interface CategoryModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (category: CategoryFormData) => void;
-  initialData?: Category | null;
-};
+  initialData?: CategoryWithId | null;
+}
 
-const CategoryModal: React.FC<Props> = ({
+const CategoryModal: React.FC<CategoryModalProps> = ({
   visible,
   onClose,
   onSubmit,
@@ -29,21 +37,60 @@ const CategoryModal: React.FC<Props> = ({
   const [attributes, setAttributes] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [inputVisible, setInputVisible] = useState(false);
+  const [selectedParentCategory, setSelectedParentCategory] = useState<string | null>(null);
   const inputRef = React.useRef<InputRef>(null);
 
-  const { data: categories, isPending } = useAllCategories();
+  const { data: categories, isPending } = useAllCategories() as { data: CategoryWithId[] | undefined, isPending: boolean };
+  
+  const mainCategories = categories?.filter(cat => !cat.parentCategory) || [];
+
+  const getAvailableCategories = () => {
+    if (!categories) return [];
+    
+    // Function to check if a category is an ancestor of another
+    const isAncestor = (potentialAncestor: CategoryWithId, category: CategoryWithId): boolean => {
+      if (!category.parentCategory) return false;
+      if (category.parentCategory._id === potentialAncestor._id) return true;
+      return isAncestor(potentialAncestor, category.parentCategory);
+    };
+
+    // Function to get the current category if we're editing
+    const getCurrentCategory = () => {
+      if (!initialData) return null;
+      return categories.find(cat => cat._id === initialData._id) || null;
+    };
+
+    // When selecting a parent category
+    const currentCategory = getCurrentCategory();
+    return categories.filter(cat => {
+      // Don't show the category itself
+      if (currentCategory && cat._id === currentCategory._id) return false;
+      
+      // Don't show any descendants of the current category (to prevent circular references)
+      if (currentCategory && isAncestor(currentCategory, cat)) return false;
+      
+      return true;
+    })
+  };
+
+  const handleParentCategoryChange = (value: string | null) => {
+    setSelectedParentCategory(value);
+    form.setFieldsValue({ parentCategory: value });
+  };
 
   useEffect(() => {
     if (initialData) {
       form.setFieldsValue({
         name: initialData.name,
-        parentCategory: initialData.parentCategory,
+        parentCategory: initialData.parentCategory?._id || null,
         attributes: initialData.attributes,
       });
+      setSelectedParentCategory(initialData.parentCategory?._id || null);
       setAttributes(initialData.attributes || []);
     } else {
       form.resetFields();
       setAttributes([]);
+      setSelectedParentCategory(null);
     }
   }, [initialData, form]);
 
@@ -101,10 +148,20 @@ const CategoryModal: React.FC<Props> = ({
             allowClear
             placeholder="Select parent category"
             loading={isPending}
-            options={categories?.map((cat: Category) => ({
+            onChange={handleParentCategoryChange}
+            value={selectedParentCategory}
+            options={getAvailableCategories().map((cat) => ({
               value: cat._id,
               label: cat.name,
             }))}
+            tagRender={(props) => {
+              const { label, closable, onClose } = props;
+              return (
+                <Tag closable={closable} onClose={onClose} style={{ marginRight: 3 }}>
+                  {label}
+                </Tag>
+              );
+            }}
           />
         </Form.Item>
 
